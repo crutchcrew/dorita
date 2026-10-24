@@ -1,7 +1,5 @@
-'use strict';
-
-const { describe, it, expect, afterEach } = require('bun:test');
-const { resolveCiphers, robotTlsOptions } = require('../lib/tls');
+import { describe, it, expect, afterEach } from 'bun:test';
+import { resolveCiphers, robotTlsOptions } from '../lib/tls.ts';
 
 const env = Object.assign({}, process.env);
 

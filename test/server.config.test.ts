@@ -1,12 +1,10 @@
-'use strict';
+import { describe, it, expect } from 'bun:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { loadConfig, validateConfig } from '../server/config.ts';
 
-const { describe, it, expect } = require('bun:test');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { loadConfig, validateConfig } = require('../server/config');
-
-function tempConfig (contents) {
+function tempConfig(contents: Record<string, unknown>) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rest980-'));
   fs.mkdirSync(path.join(dir, 'config'));
   fs.writeFileSync(path.join(dir, 'config', 'default.json'), JSON.stringify(contents));
@@ -24,7 +22,12 @@ describe('loadConfig', () => {
   });
 
   it('reads config/default.json from the working directory', () => {
-    const dir = tempConfig({ blid: 'fileblid', password: 'filepass', firmwareVersion: 1, port: 8080 });
+    const dir = tempConfig({
+      blid: 'fileblid',
+      password: 'filepass',
+      firmwareVersion: 1,
+      port: 8080,
+    });
     const config = loadConfig({}, dir);
     expect(config.blid).toBe('fileblid');
     expect(config.password).toBe('filepass');
@@ -35,7 +38,10 @@ describe('loadConfig', () => {
 
   it('prefers environment variables over the config file', () => {
     const dir = tempConfig({ blid: 'fileblid', robotIP: '10.0.0.1' });
-    const config = loadConfig({ BLID: 'envblid', ROBOT_IP: '10.0.0.2', PORT: '4000', FIRMWARE_VERSION: '2' }, dir);
+    const config = loadConfig(
+      { BLID: 'envblid', ROBOT_IP: '10.0.0.2', PORT: '4000', FIRMWARE_VERSION: '2' },
+      dir,
+    );
     expect(config.blid).toBe('envblid');
     expect(config.robotIP).toBe('10.0.0.2');
     expect(config.port).toBe(4000);
@@ -43,7 +49,10 @@ describe('loadConfig', () => {
 
   it('reads CONFIG_FILE', () => {
     const dir = tempConfig({ blid: 'custom' });
-    const config = loadConfig({ CONFIG_FILE: path.join(dir, 'config', 'default.json') }, os.tmpdir());
+    const config = loadConfig(
+      { CONFIG_FILE: path.join(dir, 'config', 'default.json') },
+      os.tmpdir(),
+    );
     expect(config.blid).toBe('custom');
   });
 
@@ -61,12 +70,18 @@ describe('validateConfig', () => {
   });
 
   it('requires both SSL files', () => {
-    expect(() => validateConfig({ blid: 'a', password: 'b', sslKeyFile: 'key.pem' })).toThrow(/SSL_CERT_FILE/);
+    expect(() => validateConfig({ blid: 'a', password: 'b', sslKeyFile: 'key.pem' })).toThrow(
+      /SSL_CERT_FILE/,
+    );
   });
 
   it('requires both basic auth values', () => {
-    expect(() => validateConfig({ blid: 'a', password: 'b', basicAuthUser: 'admin' })).toThrow(/BASIC_AUTH_PASS/);
-    expect(() => validateConfig({ blid: 'a', password: 'b', basicAuthPass: 'secret' })).toThrow(/BASIC_AUTH_USER/);
+    expect(() => validateConfig({ blid: 'a', password: 'b', basicAuthUser: 'admin' })).toThrow(
+      /BASIC_AUTH_PASS/,
+    );
+    expect(() => validateConfig({ blid: 'a', password: 'b', basicAuthPass: 'secret' })).toThrow(
+      /BASIC_AUTH_USER/,
+    );
   });
 
   it('accepts a valid config', () => {

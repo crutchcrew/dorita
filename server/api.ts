@@ -1,17 +1,30 @@
-'use strict';
+import type { Source } from './robot.ts';
+
+export interface Route {
+  methods: string[];
+  path: string;
+  source: Source;
+  method: string;
+  hasArgs: boolean;
+  onlyFirmware?: 1 | 2;
+}
+
+type RouteSpec = [string | string[], string, Source, string, boolean?, (1 | 2)?];
+
+const ACTION = ['GET', 'POST'];
 
 // REST routes carried over from rest980, mapped to dorita980 methods:
-// [HTTP method(s), path under /api, source, dorita980 method, takes a body]
-const routes = [
+// [HTTP method(s), path under /api, source, dorita980 method, takes a body, only for firmware]
+const specs: RouteSpec[] = [
   // Local actions. rest980 used GET; POST is accepted too.
-  [['GET', 'POST'], '/local/action/start', 'local', 'start'],
-  [['GET', 'POST'], '/local/action/stop', 'local', 'stop'],
-  [['GET', 'POST'], '/local/action/pause', 'local', 'pause'],
-  [['GET', 'POST'], '/local/action/dock', 'local', 'dock'],
-  [['GET', 'POST'], '/local/action/resume', 'local', 'resume'],
-  [['GET', 'POST'], '/local/action/clean', 'local', 'clean'],
-  [['GET', 'POST'], '/local/action/find', 'local', 'find'],
-  [['GET', 'POST'], '/local/action/evac', 'local', 'evac'],
+  [ACTION, '/local/action/start', 'local', 'start'],
+  [ACTION, '/local/action/stop', 'local', 'stop'],
+  [ACTION, '/local/action/pause', 'local', 'pause'],
+  [ACTION, '/local/action/dock', 'local', 'dock'],
+  [ACTION, '/local/action/resume', 'local', 'resume'],
+  [ACTION, '/local/action/clean', 'local', 'clean'],
+  [ACTION, '/local/action/find', 'local', 'find'],
+  [ACTION, '/local/action/evac', 'local', 'evac'],
   ['POST', '/local/action/cleanRoom', 'local', 'cleanRoom', true],
 
   // Local configuration.
@@ -62,14 +75,16 @@ const routes = [
   ['GET', '/cloud/action/wipe', 'cloud', 'wipe'],
   ['GET', '/cloud/action/sleep', 'cloud', 'sleep'],
   ['GET', '/cloud/action/off', 'cloud', 'off'],
-  ['GET', '/cloud/action/fbeep', 'cloud', 'fbeep']
-].map(([methods, path, source, method, hasArgs, onlyFirmware]) => ({
-  methods: [].concat(methods),
-  path: '/api' + path,
-  source,
-  method,
-  hasArgs: Boolean(hasArgs),
-  onlyFirmware
-}));
+  ['GET', '/cloud/action/fbeep', 'cloud', 'fbeep'],
+];
 
-module.exports = routes;
+export const routes: Route[] = specs.map(
+  ([methods, path, source, method, hasArgs, onlyFirmware]) => ({
+    methods: ([] as string[]).concat(methods),
+    path: '/api' + path,
+    source,
+    method,
+    hasArgs: Boolean(hasArgs),
+    onlyFirmware,
+  }),
+);

@@ -1,4 +1,5 @@
 # dorita980
+
 [![npm version](https://badge.fury.io/js/dorita980.svg)](http://badge.fury.io/js/dorita980)
 
 Unofficial iRobot Roomba (Combo 10 Max, j7, i7/i7+, 980, 960, e5, 690, 675, etc) JavaScript library (SDK), REST API and web UI. Runs on [Bun](https://bun.sh).
@@ -41,9 +42,9 @@ V4 protocol robots are **work in progress** and not yet supported here. These in
 
 ## Runtime and TLS compatibility
 
-dorita980 is developed and tested with [Bun](https://bun.sh) (>= 1.2.21). The library and the REST server also still run on Node.js (>= 18).
+dorita980 is written in TypeScript and developed with [Bun](https://bun.sh) (>= 1.2.21), which runs the sources directly. The npm package ships compiled JavaScript and type declarations in `dist/`, so the library and the REST server also run on Node.js (>= 20.19, with `import` or `require`). Node.js 22.18+ can also run the TypeScript sources directly, e.g. `node bin/rest980.ts`.
 
-Bun uses BoringSSL, which does not support the `AES128-SHA256` cipher that dorita980 asks for by default (and that some older robots, e.g. 900 series on firmware 2.x, may require). On Bun, unsupported ciphers are dropped and the runtime's default cipher list is used instead. If your robot fails the TLS handshake under Bun, run the same code with Node.js instead, e.g. `node ./bin/rest980.js`. The REST server shows a hint in the web UI and logs when this looks like the cause.
+Bun uses BoringSSL, which does not support the `AES128-SHA256` cipher that dorita980 asks for by default (and that some older robots, e.g. 900 series on firmware 2.x, may require). On Bun, unsupported ciphers are dropped and the runtime's default cipher list is used instead. If your robot fails the TLS handshake under Bun, run the same code with Node.js instead, e.g. `node bin/rest980.ts` from a clone (Node.js 22.18+) or `node node_modules/dorita980/dist/bin/rest980.js` from the npm package. The REST server shows a hint in the web UI and logs when this looks like the cause.
 
 Newer OpenSSL versions disable legacy TLS renegotiation by default, which can break local connections to some robots. dorita980 enables legacy renegotiation when available. You can override behavior with:
 
@@ -56,26 +57,26 @@ Video: Realtime cleaning map using dorita980 lib in rest980.
 
 ## Supported Features by Firmware Version (v1/v2/v3)
 
-|                                             | 1.6.x Local | 1.6.x Cloud | 2.x.x Local | 2.x.x Cloud | 3.x.x Local |
-|---------------------------------------------|-------------|-------------|-------------|-------------|-------------|
-| Clean/Start/Stop/Pause/Dock/Resume/CleanRoom/Find | yes | yes | yes | pending | yes |
-| Get Preferences                             | yes         | yes         | yes         | pending     | yes         |
-| Set Preferences                             | yes         | yes         | yes         | pending     | yes         |
-| Get x,y,d Position                          | yes         | yes         | yes         | pending     | -           |
-| Get Mission                                 | yes         | yes         | yes         | pending     | yes         |
-| Get Mission number                          | no          | no          | yes         | pending     | yes         |
-| Get General Info                            | yes         | yes         | yes         | pending     | yes         |
-| Get Schedule                                | yes         | yes         | yes         | pending     | yes         |
-| Set Schedule                                | yes         | yes         | yes         | pending     | yes         |
-| Set CarpetBoost (performance, eco, auto)    | yes         | yes         | yes         | pending     | -           |
-| Set Edge Clean                              | yes         | yes         | yes         | pending     | -           |
-| Set Cleaning Passes (auto, on, two)         | yes         | yes         | yes         | pending     | -           |
-| set Always Finish                           | yes         | yes         | yes         | pending     | -           |
-| MQTT Custom events                          | -           | -           | yes         | pending     | yes         |
-| HTTP API                                    | yes         | yes         | -           | -           | -           |
-| Discovery Robot IP                          | yes         | -           | yes         | -           | yes         |
-| Get BLID and Password                       | yes         | -           | yes         | -           | yes         |
-| Support multiples clients at the same time  | yes         | yes         | no          | pending     | no          |
+|                                                   | 1.6.x Local | 1.6.x Cloud | 2.x.x Local | 2.x.x Cloud | 3.x.x Local |
+| ------------------------------------------------- | ----------- | ----------- | ----------- | ----------- | ----------- |
+| Clean/Start/Stop/Pause/Dock/Resume/CleanRoom/Find | yes         | yes         | yes         | pending     | yes         |
+| Get Preferences                                   | yes         | yes         | yes         | pending     | yes         |
+| Set Preferences                                   | yes         | yes         | yes         | pending     | yes         |
+| Get x,y,d Position                                | yes         | yes         | yes         | pending     | -           |
+| Get Mission                                       | yes         | yes         | yes         | pending     | yes         |
+| Get Mission number                                | no          | no          | yes         | pending     | yes         |
+| Get General Info                                  | yes         | yes         | yes         | pending     | yes         |
+| Get Schedule                                      | yes         | yes         | yes         | pending     | yes         |
+| Set Schedule                                      | yes         | yes         | yes         | pending     | yes         |
+| Set CarpetBoost (performance, eco, auto)          | yes         | yes         | yes         | pending     | -           |
+| Set Edge Clean                                    | yes         | yes         | yes         | pending     | -           |
+| Set Cleaning Passes (auto, on, two)               | yes         | yes         | yes         | pending     | -           |
+| set Always Finish                                 | yes         | yes         | yes         | pending     | -           |
+| MQTT Custom events                                | -           | -           | yes         | pending     | yes         |
+| HTTP API                                          | yes         | yes         | -           | -           | -           |
+| Discovery Robot IP                                | yes         | -           | yes         | -           | yes         |
+| Get BLID and Password                             | yes         | -           | yes         | -           | yes         |
+| Support multiples clients at the same time        | yes         | yes         | no          | pending     | no          |
 
 Note: v4 protocol robots are not covered by this table (WIP).
 
@@ -90,23 +91,24 @@ $ bun add dorita980
 ```
 
 # Quick start via Local request on your LAN
+
 You can control the robot from your local network.
 
 Create `myapp.js` file with this content:
 
 ```javascript
-var dorita980 = require('dorita980');
+import dorita980 from 'dorita980';
 
 var myRobotViaLocal = new dorita980.Local('MyUsernameBlid', 'MyPassword', '192.168.1.104'); // robot IP address
 
 myRobotViaLocal.on('connect', init);
 
-function init () {
-  myRobotViaLocal.clean()
-  .then(() => myRobotViaLocal.end()) // disconnect to leave free the channel for the mobile app.
-  .catch(console.log);
+function init() {
+  myRobotViaLocal
+    .clean()
+    .then(() => myRobotViaLocal.end()) // disconnect to leave free the channel for the mobile app.
+    .catch(console.log);
 }
-
 ```
 
 Then install `dorita980` and run your program:
@@ -121,35 +123,37 @@ $ bun myapp.js
 Pause the robot via Local request:
 
 ```javascript
-var dorita980 = require('dorita980');
+import dorita980 from 'dorita980';
 
-var myRobotViaLocal = new dorita980.Local('MyUsernameBlid', 'MyPassword', '192.168.1.104'); // robot IP address 
+var myRobotViaLocal = new dorita980.Local('MyUsernameBlid', 'MyPassword', '192.168.1.104'); // robot IP address
 
 myRobotViaLocal.on('connect', init);
 
-function init () {
-  myRobotViaLocal.pause()
-  .then(() => myRobotViaLocal.end()) // disconnect to leave free the channel for the mobile app.
-  .catch(console.log);
+function init() {
+  myRobotViaLocal
+    .pause()
+    .then(() => myRobotViaLocal.end()) // disconnect to leave free the channel for the mobile app.
+    .catch(console.log);
 }
 ```
 
 Get robot week schedule
 
 ```javascript
-var dorita980 = require('dorita980');
+import dorita980 from 'dorita980';
 
-var myRobotViaLocal = new dorita980.Local('MyUsernameBlid', 'MyPassword', '192.168.1.104'); // robot IP address 
+var myRobotViaLocal = new dorita980.Local('MyUsernameBlid', 'MyPassword', '192.168.1.104'); // robot IP address
 
 myRobotViaLocal.on('connect', init);
 
-function init () {
-  myRobotViaLocal.getWeek()
-  .then((weekConfig) => {
-    console.log(weekConfig)
-    myRobotViaLocal.end()
-  })
-  .catch(console.log);
+function init() {
+  myRobotViaLocal
+    .getWeek()
+    .then((weekConfig) => {
+      console.log(weekConfig);
+      myRobotViaLocal.end();
+    })
+    .catch(console.log);
 }
 ```
 
@@ -193,6 +197,7 @@ Docker run command:
 ```
 docker run -it oven/bun bunx --package dorita980 get-roomba-password-cloud <iRobot Username> <iRobot Password> [Optional API-Key]
 ```
+
 ** Example Output **
 
 ```
@@ -261,6 +266,7 @@ Password=> :1:1486937829:gktkDoYpWaDxCfGh <= Yes, all this string.
 Use this credentials in dorita980 lib :)
 
 ```
+
 </details>
 
 ### Troubleshoot - Getting the password
@@ -271,7 +277,7 @@ Most common issues getting your password are related with:
 - Other applications are using your robot: Close all your applications or scripts using the robot. Same as frist bullet.
 - Network connectivity issues: Make sure your computer can reach your robot: `nc -zv <robot_ip> 8883` if this command fails check your network.
 - Slow networks using local method: On some slow networks you need to run the `get-roomba-password` a couple of times until you get it. This is because UDP packages may be lost.
-- Runtime: if the TLS connection to the robot fails under Bun, try Node.js (`node ./bin/getpassword.js <robotIP>`). See [Runtime and TLS compatibility](#runtime-and-tls-compatibility).
+- Runtime: if the TLS connection to the robot fails under Bun, try Node.js (`node bin/getpassword.ts <robotIP>` from a clone, Node.js 22.18+). See [Runtime and TLS compatibility](#runtime-and-tls-compatibility).
 - Wrong button: It is really common people touching CLEAN button on 980 robots instead of HOME button when prompted. Make sure you are pressing the correct button. Some model (like 675) do not have HOME button and you need to press DOCK+SPOT.
 - Make sure your robot is docked on the Home Base and powered on (short press Clean button once to turn it on. But do not start a cleaning session!)
 - Robot not configured: Did you configure the Robot for first time with the mobile app? If not, you need to do that first. This process set the actual password.
@@ -285,19 +291,21 @@ This process takes 1-2 seconds, so if you know the IP you can just use it explic
 You need UDP brodcast enable in your network!
 
 ```javascript
-var dorita980 = require('dorita980');
+import dorita980 from 'dorita980';
 
 dorita980.getRobotIP((ierr, ip) => {
   if (ierr) return console.log('error looking for robot IP');
 
   var myRobotViaLocal = new dorita980.Local('MyUsernameBlid', 'MyPassword', ip);
 
-  myRobotViaLocal.getMission()
-  .then((mission) => {
-    console.log(mission);
-  }).catch((err) => {
-    console.log(err);
-  });
+  myRobotViaLocal
+    .getMission()
+    .then((mission) => {
+      console.log(mission);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
 ```
 
@@ -306,7 +314,7 @@ You can also use `.discovery` method to get all the robots discovery data:
 You need UDP brodcast enabled in your network!
 
 ```javascript
-var dorita980 = require('dorita980');
+import dorita980 from 'dorita980';
 
 dorita980.discovery((ierr, data) => {
   console.log(data);
@@ -314,6 +322,7 @@ dorita980.discovery((ierr, data) => {
 ```
 
 Will print:
+
 ```
 { ver: '2',
   hostname: 'Roomba-xxxxxxxxxxxxx',
@@ -346,7 +355,7 @@ rest980 listening on http://localhost:3000
 robot: connected
 ```
 
-Open `http://<server-ip>:3000` in your browser. If the robot needs a cipher Bun lacks, run `node ./bin/rest980.js` instead (see [Runtime and TLS compatibility](#runtime-and-tls-compatibility)).
+Open `http://<server-ip>:3000` in your browser. If the robot needs a cipher Bun lacks, run `node bin/rest980.ts` (Node.js 22.18+) instead (see [Runtime and TLS compatibility](#runtime-and-tls-compatibility)).
 
 Remember the robot accepts only one local connection at a time: while the server keeps the connection open (`KEEP_ALIVE=yes`), the official app falls back to the cloud.
 
@@ -354,21 +363,21 @@ Remember the robot accepts only one local connection at a time: while the server
 
 Set environment variables (Bun loads `.env` automatically) or put the same keys in `config/default.json` (or the file named by `CONFIG_FILE`). Environment variables win.
 
-|Config file key|Environment|Description|
-|:---|:---|:---|
-|port|PORT|*(default: 3000)* The HTTP port to listen on.|
-|blid|BLID|*(required)* The robot blid. See [How to get your username/blid and password](#how-to-get-your-usernameblid-and-password).|
-|password|PASSWORD|*(required)* The robot password.|
-|robotIP|ROBOT_IP|*(optional)* The robot IP. Without it the robot is discovered with a UDP broadcast on startup.|
-|robotPort|ROBOT_PORT|*(optional, default: 8883)* The robot MQTT/TLS port (firmware 2.x).|
-|firmwareVersion|FIRMWARE_VERSION|*(optional, default: 2)* `1` for firmware 1.6.x, `2` for any firmware >= 2 (also 3.x).|
-|enableLocal|ENABLE_LOCAL|*(optional)* Set to `no` to disable the local API. Default `yes`.|
-|enableCloud|ENABLE_CLOUD|*(optional)* Set to `no` to disable the cloud API (firmware 1.x only). Default `yes`.|
-|keepAlive|KEEP_ALIVE|*(optional)* Set to `no` to connect and disconnect on each request (slower, but leaves the connection free for the official app; no live updates).|
-|basicAuthUser|BASIC_AUTH_USER|*(optional)* Enables HTTP basic auth for the API and web UI. Both user and pass must be set.|
-|basicAuthPass|BASIC_AUTH_PASS|*(optional)* See above.|
-|sslKeyFile|SSL_KEY_FILE|*(optional)* Path to a key file to enable HTTPS. Both key and cert must be set.|
-|sslCertFile|SSL_CERT_FILE|*(optional)* Path to a cert file to enable HTTPS.|
+| Config file key | Environment      | Description                                                                                                                                        |
+| :-------------- | :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| port            | PORT             | _(default: 3000)_ The HTTP port to listen on.                                                                                                      |
+| blid            | BLID             | _(required)_ The robot blid. See [How to get your username/blid and password](#how-to-get-your-usernameblid-and-password).                         |
+| password        | PASSWORD         | _(required)_ The robot password.                                                                                                                   |
+| robotIP         | ROBOT_IP         | _(optional)_ The robot IP. Without it the robot is discovered with a UDP broadcast on startup.                                                     |
+| robotPort       | ROBOT_PORT       | _(optional, default: 8883)_ The robot MQTT/TLS port (firmware 2.x).                                                                                |
+| firmwareVersion | FIRMWARE_VERSION | _(optional, default: 2)_ `1` for firmware 1.6.x, `2` for any firmware >= 2 (also 3.x).                                                             |
+| enableLocal     | ENABLE_LOCAL     | _(optional)_ Set to `no` to disable the local API. Default `yes`.                                                                                  |
+| enableCloud     | ENABLE_CLOUD     | _(optional)_ Set to `no` to disable the cloud API (firmware 1.x only). Default `yes`.                                                              |
+| keepAlive       | KEEP_ALIVE       | _(optional)_ Set to `no` to connect and disconnect on each request (slower, but leaves the connection free for the official app; no live updates). |
+| basicAuthUser   | BASIC_AUTH_USER  | _(optional)_ Enables HTTP basic auth for the API and web UI. Both user and pass must be set.                                                       |
+| basicAuthPass   | BASIC_AUTH_PASS  | _(optional)_ See above.                                                                                                                            |
+| sslKeyFile      | SSL_KEY_FILE     | _(optional)_ Path to a key file to enable HTTPS. Both key and cert must be set.                                                                    |
+| sslCertFile     | SSL_CERT_FILE    | _(optional)_ Path to a cert file to enable HTTPS.                                                                                                  |
 
 The `ROBOT_TLS_LEGACY`, `ROBOT_CIPHERS` and cloud auth override variables described above are passed through to the library.
 
@@ -415,7 +424,9 @@ Actions are under `/api/local/action/[action]` and accept `GET` (as in rest980) 
 ```http
 POST http://192.168.1.110:3000/api/local/action/start
 ```
+
 Success Response:
+
 ```
 {"ok":null}
 ```
@@ -477,51 +488,52 @@ Use `GET` on:
 
 The library send commands directly over wifi to your robot. You dont need an internet connection.
 
-* <a href="#Local"><code><b>dorita980.Local(blid, password, ip, firmwareVersion)</b></code></a>
-* <a href="#end"><code>myRobot.<b>end()</b></code></a>
-* <a href="#getRobotState"><code>myRobot.<b>getRobotState(waitForFields)</b></code></a>
-* <a href="#getPreferences"><code>myRobot.<b>getPreferences()</b></code></a>
-* <a href="#setPreferences"><code>myRobot.<b>setPreferences(newPreferences)</b></code></a>
-* <a href="#getMission"><code>myRobot.<b>getMission()</b></code></a>
-* <a href="#getBasicMission"><code>myRobot.<b>getBasicMission()</b></code></a>
-* <a href="#getWirelessStatus"><code>myRobot.<b>getWirelessStatus()</b></code></a>
-* <a href="#getTime"><code>myRobot.<b>getTime()</b></code></a>
-* <a href="#getBbrun"><code>myRobot.<b>getBbrun()</b></code></a>
-* <a href="#getLangs"><code>myRobot.<b>getLangs()</b></code></a>
-* <a href="#getSys"><code>myRobot.<b>getSys()</b></code></a>
-* <a href="#getWirelessLastStatus"><code>myRobot.<b>getWirelessLastStatus()</b></code></a>
-* <a href="#getWeek"><code>myRobot.<b>getWeek()</b></code></a>
-* <a href="#setWeek"><code>myRobot.<b>setWeek(newWeek)</b></code></a>
-* <a href="#getCloudConfig"><code>myRobot.<b>getCloudConfig()</b></code></a>
-* <a href="#start"><code>myRobot.<b>start()</b></code></a>
-* <a href="#clean"><code>myRobot.<b>clean()</b></code></a>
-* <a href="#cleanRoom"><code>myRobot.<b>cleanRoom(args)</b></code></a>
-* <a href="#cleanRoomMultiple"><code>myRobot.<b>cleanRoom(args) for multiple rooms</b></code></a>
-* <a href="#pause"><code>myRobot.<b>pause()</b></code></a>
-* <a href="#stop"><code>myRobot.<b>stop()</b></code></a>
-* <a href="#resume"><code>myRobot.<b>resume()</b></code></a>
-* <a href="#dock"><code>myRobot.<b>dock()</b></code></a>
-* <a href="#setCarpetBoostAuto"><code>myRobot.<b>setCarpetBoostAuto()</b></code></a>
-* <a href="#setCarpetBoostPerformance"><code>myRobot.<b>setCarpetBoostPerformance()</b></code></a>
-* <a href="#setCarpetBoostEco"><code>myRobot.<b>setCarpetBoostEco()</b></code></a>
-* <a href="#setEdgeCleanOn"><code>myRobot.<b>setEdgeCleanOn()</b></code></a>
-* <a href="#setEdgeCleanOff"><code>myRobot.<b>setEdgeCleanOff()</b></code></a>
-* <a href="#setCleaningPassesAuto"><code>myRobot.<b>setCleaningPassesAuto()</b></code></a>
-* <a href="#setCleaningPassesOne"><code>myRobot.<b>setCleaningPassesOne()</b></code></a>
-* <a href="#setCleaningPassesTwo"><code>myRobot.<b>setCleaningPassesTwo()</b></code></a>
-* <a href="#setAlwaysFinishOn"><code>myRobot.<b>setAlwaysFinishOn()</b></code></a>
-* <a href="#setAlwaysFinishOff"><code>myRobot.<b>setAlwaysFinishOff()</b></code></a>
-* <a href="#connect"><code>myRobot.on(<b>'connect'</b>, callback)</code></a>
-* <a href="#close"><code>myRobot.on(<b>'close'</b>, callback)</code></a>
-* <a href="#offline"><code>myRobot.on(<b>'offline'</b>, callback)</code></a>
-* <a href="#update"><code>myRobot.on(<b>'update'</b>, callback)</code></a>
-* <a href="#mission"><code>myRobot.on(<b>'mission'</b>, callback)</code></a>
-* <a href="#state"><code>myRobot.on(<b>'state'</b>, callback)</code></a>
-* <a href="#publish"><code>myRobot.publish(<b>'topic'</b>, <b>rawJsonMessageAsString</b>, callback)</code></a>
+- <a href="#Local"><code><b>dorita980.Local(blid, password, ip, firmwareVersion)</b></code></a>
+- <a href="#end"><code>myRobot.<b>end()</b></code></a>
+- <a href="#getRobotState"><code>myRobot.<b>getRobotState(waitForFields)</b></code></a>
+- <a href="#getPreferences"><code>myRobot.<b>getPreferences()</b></code></a>
+- <a href="#setPreferences"><code>myRobot.<b>setPreferences(newPreferences)</b></code></a>
+- <a href="#getMission"><code>myRobot.<b>getMission()</b></code></a>
+- <a href="#getBasicMission"><code>myRobot.<b>getBasicMission()</b></code></a>
+- <a href="#getWirelessStatus"><code>myRobot.<b>getWirelessStatus()</b></code></a>
+- <a href="#getTime"><code>myRobot.<b>getTime()</b></code></a>
+- <a href="#getBbrun"><code>myRobot.<b>getBbrun()</b></code></a>
+- <a href="#getLangs"><code>myRobot.<b>getLangs()</b></code></a>
+- <a href="#getSys"><code>myRobot.<b>getSys()</b></code></a>
+- <a href="#getWirelessLastStatus"><code>myRobot.<b>getWirelessLastStatus()</b></code></a>
+- <a href="#getWeek"><code>myRobot.<b>getWeek()</b></code></a>
+- <a href="#setWeek"><code>myRobot.<b>setWeek(newWeek)</b></code></a>
+- <a href="#getCloudConfig"><code>myRobot.<b>getCloudConfig()</b></code></a>
+- <a href="#start"><code>myRobot.<b>start()</b></code></a>
+- <a href="#clean"><code>myRobot.<b>clean()</b></code></a>
+- <a href="#cleanRoom"><code>myRobot.<b>cleanRoom(args)</b></code></a>
+- <a href="#cleanRoomMultiple"><code>myRobot.<b>cleanRoom(args) for multiple rooms</b></code></a>
+- <a href="#pause"><code>myRobot.<b>pause()</b></code></a>
+- <a href="#stop"><code>myRobot.<b>stop()</b></code></a>
+- <a href="#resume"><code>myRobot.<b>resume()</b></code></a>
+- <a href="#dock"><code>myRobot.<b>dock()</b></code></a>
+- <a href="#setCarpetBoostAuto"><code>myRobot.<b>setCarpetBoostAuto()</b></code></a>
+- <a href="#setCarpetBoostPerformance"><code>myRobot.<b>setCarpetBoostPerformance()</b></code></a>
+- <a href="#setCarpetBoostEco"><code>myRobot.<b>setCarpetBoostEco()</b></code></a>
+- <a href="#setEdgeCleanOn"><code>myRobot.<b>setEdgeCleanOn()</b></code></a>
+- <a href="#setEdgeCleanOff"><code>myRobot.<b>setEdgeCleanOff()</b></code></a>
+- <a href="#setCleaningPassesAuto"><code>myRobot.<b>setCleaningPassesAuto()</b></code></a>
+- <a href="#setCleaningPassesOne"><code>myRobot.<b>setCleaningPassesOne()</b></code></a>
+- <a href="#setCleaningPassesTwo"><code>myRobot.<b>setCleaningPassesTwo()</b></code></a>
+- <a href="#setAlwaysFinishOn"><code>myRobot.<b>setAlwaysFinishOn()</b></code></a>
+- <a href="#setAlwaysFinishOff"><code>myRobot.<b>setAlwaysFinishOff()</b></code></a>
+- <a href="#connect"><code>myRobot.on(<b>'connect'</b>, callback)</code></a>
+- <a href="#close"><code>myRobot.on(<b>'close'</b>, callback)</code></a>
+- <a href="#offline"><code>myRobot.on(<b>'offline'</b>, callback)</code></a>
+- <a href="#update"><code>myRobot.on(<b>'update'</b>, callback)</code></a>
+- <a href="#mission"><code>myRobot.on(<b>'mission'</b>, callback)</code></a>
+- <a href="#state"><code>myRobot.on(<b>'state'</b>, callback)</code></a>
+- <a href="#publish"><code>myRobot.publish(<b>'topic'</b>, <b>rawJsonMessageAsString</b>, callback)</code></a>
 
 ## Methods
 
 <a name="end"></a>
+
 #### `end()`
 
 Close the connection to the robot. It's important if you want to send commands via the official mobile app via Local network. There's a maximum of 1 connection at any time in local network, so if your app is connected, the official mobile app only works via cloud access.
@@ -529,6 +541,7 @@ Close the connection to the robot. It's important if you want to send commands v
 While dorita980 is connected, you can call other methods to send commands and listen for the events to get data. Just call the `.end()` method if you want. While dorita980 is connected, the official mobile app will only work via the cloud to send commands to your robot.
 
 <a name="getRobotState"></a>
+
 #### `getRobotState(Array waitForFields)`
 
 Get the robot state but wait for the `waitForFields` fields before return.
@@ -542,6 +555,7 @@ myRobotViaLocal.getRobotState(['batPct', 'bbchg3']).then((actualState) => {
 ```
 
 Full state should contain:
+
 ```javascript
 
 { netinfo:
@@ -654,6 +668,7 @@ Full state should contain:
 ```
 
 <a name="getPreferences"></a>
+
 #### `getPreferences()`
 
 Get the full robot state but wait for the `['cleanMissionStatus', 'cleanSchedule', 'name', 'vacHigh', 'pose']` fields before returning.
@@ -665,16 +680,17 @@ Waits for the 'signal' to make sure we have the full state object.
 Use `getRobotState(['cleanMissionStatus', 'cleanSchedule', 'name', 'vacHigh', 'signal'])` without `pose` in models without navigation like E6 models.
 
 <a name="setPreferences"></a>
+
 #### `setPreferences(newPreferences)`
 
 Partially overwrites the robot state to configure it.
 
 ```javascript
-var newPreferences = { 
- binPause: false
+var newPreferences = {
+  binPause: false,
 };
 
-myRobotViaLocal.setPreferences(newPreferences)
+myRobotViaLocal.setPreferences(newPreferences);
 ```
 
 Response:
@@ -684,7 +700,9 @@ Response:
 ```
 
 <a name="getMission"></a>
+
 #### `getMission()`
+
 With this you can draw a map :) in models with position reporting. Use `getBasicMission()` in robots without position reporting feature like E5 models.
 
 ```javascript
@@ -703,8 +721,11 @@ With this you can draw a map :) in models with position reporting. Use `getBasic
 ```
 
 <a name="getBasicMission"></a>
+
 #### `getBasicMission()`
+
 Same as `getMission` but don't wait for `pose` information
+
 ```javascript
 { cleanMissionStatus:
    { cycle: 'none',
@@ -720,7 +741,9 @@ Same as `getMission` but don't wait for `pose` information
 ```
 
 <a name="getWirelessStatus"></a>
+
 #### `getWirelessStatus()`
+
 ```javascript
 { wifistat: { wifi: 1, uap: false, cloud: 4 },
   netinfo:
@@ -735,13 +758,17 @@ Same as `getMission` but don't wait for `pose` information
 ```
 
 <a name="getTime"></a>
+
 #### `getTime()`
+
 ```javascript
-1487100141
+1487100141;
 ```
 
 <a name="getBbrun"></a>
+
 #### `getBbrun()`
+
 ```javascript
  { hr: 211,
    min: 48,
@@ -758,16 +785,15 @@ Same as `getMission` but don't wait for `pose` information
 ```
 
 <a name="getLangs"></a>
+
 #### `getLangs()`
+
 ```javascript
- [ { 'en-US': 0 },
-   { 'fr-FR': 1 },
-   { 'es-ES': 2 },
-   { 'de-DE': 3 },
-   { 'it-IT': 4 } ]
+[{ 'en-US': 0 }, { 'fr-FR': 1 }, { 'es-ES': 2 }, { 'de-DE': 3 }, { 'it-IT': 4 }];
 ```
 
 <a name="getSys"></a>
+
 #### `getSys()`
 
 ```javascript
@@ -788,15 +814,20 @@ Same as `getMission` but don't wait for `pose` information
 ```
 
 <a name="getWirelessLastStatus"></a>
+
 #### `getWirelessLastStatus()`
+
 ```javascript
 { wifi: 1, uap: false, cloud: 4 },
   wlcfg: { sec: 7, ssid: '1234567890796857336364' }
 ```
 
 <a name="getWeek"></a>
+
 #### `getWeek()`
+
 Disable Monday and start every day at 10:30am
+
 ```javascript
 { cycle: [ 'none', 'none', 'none', 'none', 'none', 'none', 'none' ],
   h: [ 17, 10, 10, 12, 10, 13, 17 ],
@@ -804,12 +835,18 @@ Disable Monday and start every day at 10:30am
 ```
 
 <a name="setWeek"></a>
+
 #### `setWeek(newWeek)`
 
 Disable Sunday and start every day at 10:30am
+
 ```javascript
-var newWeek = {"cycle":["none","start","start","start","start","start","start"],"h":[10,10,10,10,10,10,10],"m":[30,30,30,30,30,30,30]}
-myRobotViaLocal.setWeek(newWeek)
+var newWeek = {
+  cycle: ['none', 'start', 'start', 'start', 'start', 'start', 'start'],
+  h: [10, 10, 10, 10, 10, 10, 10],
+  m: [30, 30, 30, 30, 30, 30, 30],
+};
+myRobotViaLocal.setWeek(newWeek);
 ```
 
 Response:
@@ -819,35 +856,40 @@ Response:
 ```
 
 <a name="getCloudConfig"></a>
+
 #### `getCloudConfig()`
+
 ```javascript
-prod
+prod;
 ```
 
 <a name="start"></a>
+
 #### `start()`
+
 ```javascript
 {"ok":null}
 ```
 
 <a name="clean"></a>
+
 #### `clean()`
+
 ```javascript
 {"ok":null}
 ```
 
 <a name="cleanRoom"></a>
+
 #### `cleanRoom(args)`
 
 `cleanRoom` is an alias for `start` - but with arguments. To clean a room - you need a structure similar to:
 
 ```javascript
 const args = {
-  "pmap_id": "ABCDEFG123456FGKS789",
-  "regions": [
-    { "region_id": "5", "region_name": "Hallway", "region_type": "hallway", "type": "rid"}
-  ],
-  "user_pmapv_id": "190917T20125Z"
+  pmap_id: 'ABCDEFG123456FGKS789',
+  regions: [{ region_id: '5', region_name: 'Hallway', region_type: 'hallway', type: 'rid' }],
+  user_pmapv_id: '190917T20125Z',
 };
 
 myRobotViaLocal.cleanRoom(args);
@@ -860,20 +902,22 @@ myRobotViaLocal.cleanRoom(args);
 The easiest way to find this information is to start a clean using the iRobot app and then call the `getRobotState` method and copy the `lastCommand` values from it. Using this you can derive the `pmap_id`, `user_pmapv_id` and `regions` data. Or looking into `pmaps` property in the state.
 
 <a name="cleanRoomMultiple"></a>
+
 #### `cleanRoom(args)` for multiple rooms
+
 By adding more regions to the regions array, a set of rooms will be cleaned.
 At least from firmware Version 3.8.3 you can set the desired order, when cleaning multiple rooms by adding `ordered = 1`:
 
 ```javascript
 const args = {
-  "ordered": 1,
-  "pmap_id": "ABCDEFG123456FGKS789",
-  "regions": [
-    { "region_id": "5", "region_name": "Hallway", "region_type": "hallway", "type": "rid"},
-    { "region_id": "0", "region_name": "living room", "region_type": "familiy room", "type": "rid"},
-    { "region_id": "1", "region_name": "kitchen", "region_type": "kitchen", "type": "rid"}
+  ordered: 1,
+  pmap_id: 'ABCDEFG123456FGKS789',
+  regions: [
+    { region_id: '5', region_name: 'Hallway', region_type: 'hallway', type: 'rid' },
+    { region_id: '0', region_name: 'living room', region_type: 'familiy room', type: 'rid' },
+    { region_id: '1', region_name: 'kitchen', region_type: 'kitchen', type: 'rid' },
   ],
-  "user_pmapv_id": "190917T20125Z"
+  user_pmapv_id: '190917T20125Z',
 };
 
 myRobotViaLocal.cleanRoom(args);
@@ -884,78 +928,105 @@ myRobotViaLocal.cleanRoom(args);
 ```
 
 <a name="pause"></a>
+
 #### `pause()`
+
 ```javascript
 {"ok":null}
 ```
 
 <a name="stop"></a>
+
 #### `stop()`
+
 ```javascript
 {"ok":null}
 ```
 
 <a name="resume"></a>
+
 #### `resume()`
+
 ```javascript
 {"ok":null}
 ```
 
 <a name="dock"></a>
+
 #### `dock()`
+
 Note: before dock you need to pause() or stop() your robot.
+
 ```javascript
 {"ok":null}
 ```
+
 <a name="find"></a>
+
 #### `find()`
+
 Note: sends locate request. If the robot is on dock nothing will happen, otherwise it will beep.
+
 ```javascript
 {"ok":null}
 ```
 
 ## Simplifications to set Cleaning Preferences:
+
 This methods use setPreferences() with the correct `flags` for each setting.
 
 <a name="setCarpetBoostAuto"></a>
+
 #### `setCarpetBoostAuto()`
+
 ```javascript
 {"ok":null}
 ```
 
 <a name="setCarpetBoostPerformance"></a>
+
 #### `setCarpetBoostPerformance()`
 
 <a name="setCarpetBoostEco"></a>
+
 #### `setCarpetBoostEco()`
 
 <a name="setEdgeCleanOn"></a>
+
 #### `setEdgeCleanOn()`
 
 <a name="setEdgeCleanOff"></a>
+
 #### `setEdgeCleanOff()`
 
 <a name="setCleaningPassesAuto"></a>
+
 #### `setCleaningPassesAuto()`
 
 <a name="setCleaningPassesOne"></a>
+
 #### `setCleaningPassesOne()`
 
 <a name="setCleaningPassesTwo"></a>
+
 #### `setCleaningPassesTwo()`
 
 <a name="setAlwaysFinishOn"></a>
+
 #### `setAlwaysFinishOn()`
 
 <a name="setAlwaysFinishOff"></a>
+
 #### `setAlwaysFinishOff()`
 
 <a name="publish"></a>
+
 #### `publish(topic, rawJsonMessageAsString, callback)`
 
 Just to experiment with raw commands using the MQTT client. Known topics are `cmd` and `delta`. But Experiment with other topics and message formats!
 
 The `delta` commands tipicaly have the following json format:
+
 ```
 {'state': newState}
 ```
@@ -969,10 +1040,10 @@ The `cmd` commands tipicaly have the following json format:
 For example to send a clean command:
 
 ```javascript
-let myCommand = {command: 'clean', time: Date.now() / 1000 | 0, initiator: 'localApp'};
+let myCommand = { command: 'clean', time: (Date.now() / 1000) | 0, initiator: 'localApp' };
 
-myRobotViaLocal.publish('cmd', JSON.stringify(myCommand), function(e) {
-  if(e) console.log('error', e);
+myRobotViaLocal.publish('cmd', JSON.stringify(myCommand), function (e) {
+  if (e) console.log('error', e);
 });
 ```
 
@@ -980,10 +1051,10 @@ Dont forget stringify the json message with `JSON.stringify(rawJsonMessageAsStri
 
 You can see undocument commands and preferences in [this thread](https://github.com/koalazak/dorita980/issues/39)
 
-
 ## Events
 
 <a name="connect"></a>
+
 #### `connect` event
 
 Emitted on successful Connection.
@@ -993,16 +1064,19 @@ Emitted on successful Connection.
 Put your code inside this callback.
 
 <a name="close"></a>
+
 #### `close` event
 
 Emitted after a disconnection.
 
 <a name="offline"></a>
+
 #### `offline` event
 
 Emitted when the client goes offline.
 
 <a name="update"></a>
+
 #### `update` event
 
 Emitted every time the Robot publishes a new message to the mqtt bus.
@@ -1013,10 +1087,12 @@ Emitted every time the Robot publishes a new message to the mqtt bus.
 
 ```javascript
 myRobotViaLocal.on('update', function (data) {
- console.log(data);
+  console.log(data);
 });
 ```
+
 Will print:
+
 ```javascript
 { state:
    { reported:
@@ -1029,7 +1105,9 @@ Will print:
         umiVer: '5',
         softwareVer: 'v2.0.0-34' } } }
 ```
+
 <a name="mission"></a>
+
 #### `mission` event
 
 Emitted every `emitIntervalTime` milliseconds with the mission data. (util for mapping in models with position reporting)
@@ -1040,12 +1118,19 @@ Emitted every `emitIntervalTime` milliseconds with the mission data. (util for m
 
 ```javascript
 var cleanMissionStatus = 300; // default is 800ms
-var myRobotViaLocal = new dorita980.Local('MyUsernameBlid', 'MyPassword', '192.168.1.104', 2, cleanMissionStatus); // Note Firmware version.
+var myRobotViaLocal = new dorita980.Local(
+  'MyUsernameBlid',
+  'MyPassword',
+  '192.168.1.104',
+  2,
+  cleanMissionStatus,
+); // Note Firmware version.
 
 myRobotViaLocal.on('mission', function (data) {
   console.log(data);
 });
 ```
+
 Will print each 300ms:
 
 ```javascript
@@ -1064,9 +1149,10 @@ Will print each 300ms:
 ```
 
 <a name="state"></a>
+
 #### `state` event
 
-Emitted every time the Robot publish a new message to the mqtt bus. 
+Emitted every time the Robot publish a new message to the mqtt bus.
 
 `function (data) {}`
 
@@ -1074,9 +1160,10 @@ Emitted every time the Robot publish a new message to the mqtt bus.
 
 ```javascript
 myRobotViaLocal.on('state', function (data) {
- console.log(data);
+  console.log(data);
 });
 ```
+
 Will print the Full robot state!
 
 # Custom tls cipher
@@ -1089,12 +1176,19 @@ $ ROBOT_CIPHERS=AES128-SHA bun myscript.js
 
 # Development
 
+Everything is TypeScript: the library in `lib/` and `index.ts`, the server in `server/`, the CLI scripts in `bin/`, and the web UI in `web/app.ts`, which the server strips of types when it serves it, so there is no bundler in development. Code is formatted with [oxfmt](https://oxc.rs/docs/guide/usage/formatter) and linted with [oxlint](https://oxc.rs/docs/guide/usage/linter).
+
 ```bash
 $ bun install
-$ bun test           # unit and end-to-end tests (uses a mock robot)
-$ bun run lint
-$ bun run mock-robot # fake firmware 2.x robot on 127.0.0.1:8883 to try the web UI
+$ bun run check        # format check, lint, typecheck and tests
+$ bun test             # unit and end-to-end tests (uses a mock robot)
+$ bun run typecheck    # tsc for the library/server and for the web UI
+$ bun run lint         # oxlint
+$ bun run format       # oxfmt
+$ bun run build        # compile to dist/ (what gets published to npm)
+$ bun run mock-robot   # fake firmware 2.x robot on 127.0.0.1:8883 to try the web UI
 ```
+
 # Cloud API
 
 Not implemented yet in Firmware 2.0.0. [Help wanted!](https://github.com/koalazak/dorita980/issues/25)
@@ -1103,16 +1197,16 @@ Not implemented yet in Firmware 2.0.0. [Help wanted!](https://github.com/koalaza
 
 If you'd like to help dorita980 stay updated and support new robots and firmwares please consider making a donation to help me purchase the latest robots.
 
-|  Method        | Wallet                                     | 
-|----------------|--------------------------------------------|
-| Bitcoin        | bc1qepwdmdk25yxa39g9kerzw9m5y7nxztwkmcu3aa |
-| Etherum        | 0x7EcE75b4fc6A2109850a106b58Dcf750C6B0CdE3 |
-| OpenColective  | [opencollective](https://opencollective.com/dorita980)       |
-| Paypal         | zak.tux@gmail.com                          |
-| Others         | Ask me                                     |
+| Method        | Wallet                                                 |
+| ------------- | ------------------------------------------------------ |
+| Bitcoin       | bc1qepwdmdk25yxa39g9kerzw9m5y7nxztwkmcu3aa             |
+| Etherum       | 0x7EcE75b4fc6A2109850a106b58Dcf750C6B0CdE3             |
+| OpenColective | [opencollective](https://opencollective.com/dorita980) |
+| Paypal        | zak.tux@gmail.com                                      |
+| Others        | Ask me                                                 |
 
 Thank you very much for your support!
 
 ## Author
 
-- [Facu ZAK](https://github.com/koalazak) 
+- [Facu ZAK](https://github.com/koalazak)

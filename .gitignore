@@ -44,3 +44,4 @@ devtest.js
 # Local server configuration
 .env
 config/default.json
+dist

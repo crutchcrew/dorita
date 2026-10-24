@@ -1,10 +1,11 @@
-'use strict';
+import { describe, it, expect } from 'bun:test';
+import { createApp } from '../server/app.ts';
+import { Robot } from '../server/robot.ts';
+import type { DoritaModule } from '../server/robot.ts';
+import type { Config } from '../server/config.ts';
+import pkg from '../package.json' with { type: 'json' };
 
-const { describe, it, expect } = require('bun:test');
-const { createApp } = require('../server/app');
-const { Robot } = require('../server/robot');
-
-const baseConfig = {
+const baseConfig: Config = {
   port: 0,
   blid: 'myblid',
   password: 'mypass',
@@ -15,13 +16,15 @@ const baseConfig = {
   enableCloud: 'yes',
   keepAlive: 'yes',
   basicAuthUser: null,
-  basicAuthPass: null
+  basicAuthPass: null,
+  sslKeyFile: null,
+  sslCertFile: null,
 };
 
 // A stand-in for the dorita980 module returning firmware 1.x style clients.
-function fakeDorita () {
-  const calls = [];
-  const record = (name, result) => (args) => {
+function fakeDorita() {
+  const calls: { name: string; args: unknown }[] = [];
+  const record = (name: string, result: unknown) => (args?: unknown) => {
     calls.push({ name, args });
     return Promise.resolve(result);
   };
@@ -31,28 +34,33 @@ function fakeDorita () {
     getMission: record('getMission', { ok: { phase: 'charge', batPct: 90 } }),
     getWeek: record('getWeek', { ok: { cycle: [], h: [], m: [] } }),
     setWeek: record('setWeek', { ok: null }),
-    getTime: () => Promise.reject(new Error('robot said no'))
+    getTime: () => Promise.reject(new Error('robot said no')),
   };
   const cloud = { getStatus: record('cloud.getStatus', { cloud: true }) };
   return {
     calls,
-    Local: (blid, password, ip, version) => {
+    Local: (blid: string, password: string, ip: string, version?: number) => {
       calls.push({ name: 'Local', args: [blid, password, ip, version] });
       return local;
     },
     Cloud: () => cloud,
-    getRobotIP: (cb) => cb(null, '10.0.0.9')
-  };
+    getRobotIP: (cb) => cb(null, '10.0.0.9'),
+  } satisfies DoritaModule & { calls: unknown };
 }
 
-function setup (overrides) {
-  const config = Object.assign({}, baseConfig, overrides);
+function setup(overrides: Partial<Config> = {}) {
+  const config: Config = { ...baseConfig, ...overrides };
   const dorita = fakeDorita();
   const robot = new Robot(config, { dorita, timeoutMs: 200 });
   robot.start();
   const app = createApp({ config, robot, log: false });
-  const request = (path, init) => app.fetch(new Request('http://localhost' + path, init));
+  const request = (path: string, init?: RequestInit) =>
+    app.fetch(new Request('http://localhost' + path, init));
   return { app, robot, dorita, request };
+}
+
+function auth(user: string, pass: string) {
+  return { Authorization: 'Basic ' + Buffer.from(user + ':' + pass).toString('base64') };
 }
 
 describe('rest980 app', () => {
@@ -94,14 +102,20 @@ describe('rest980 app', () => {
 
   it('reports versions, protocol and capabilities', async () => {
     const { request } = setup();
-    const version = await (await request('/api/info/version')).json();
-    expect(version.dorita980).toBe(require('../package.json').version);
+    const version = (await (await request('/api/info/version')).json()) as any;
+    expect(version.dorita980).toBe(pkg.version);
     expect(version.firmwareVersion).toBe(1);
 
-    const protocol = await (await request('/api/info/protocol')).json();
-    expect(protocol).toEqual({ firmwareVersion: 1, protocol: 'v1', transport: 'https-umi', keepAlive: true, robotIP: '10.0.0.5' });
+    const protocol = (await (await request('/api/info/protocol')).json()) as any;
+    expect(protocol).toEqual({
+      firmwareVersion: 1,
+      protocol: 'v1',
+      transport: 'https-umi',
+      keepAlive: true,
+      robotIP: '10.0.0.5',
+    });
 
-    const capabilities = await (await request('/api/info/capabilities')).json();
+    const capabilities = (await (await request('/api/info/capabilities')).json()) as any;
     expect(capabilities.cloud).toBe(true);
     expect(capabilities.live).toBe(false);
     expect(capabilities.actions).toEqual(['start', 'pause', 'stop', 'resume', 'dock']);
@@ -110,7 +124,9 @@ describe('rest980 app', () => {
   it('maps local actions to dorita980 methods with GET and POST', async () => {
     const { request, dorita } = setup();
     expect(await (await request('/api/local/action/start')).json()).toEqual({ ok: null });
-    expect(await (await request('/api/local/action/stop', { method: 'POST' })).json()).toEqual({ ok: null });
+    expect(await (await request('/api/local/action/stop', { method: 'POST' })).json()).toEqual({
+      ok: null,
+    });
     expect(dorita.calls.map((c) => c.name)).toContain('stop');
   });
 
@@ -120,10 +136,10 @@ describe('rest980 app', () => {
     const res = await request('/api/local/config/week', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(week)
+      body: JSON.stringify(week),
     });
     expect(res.status).toBe(200);
-    expect(dorita.calls.find((c) => c.name === 'setWeek').args).toEqual(week);
+    expect(dorita.calls.find((c) => c.name === 'setWeek')!.args).toEqual(week);
   });
 
   it('passes form bodies as arguments', async () => {
@@ -131,16 +147,16 @@ describe('rest980 app', () => {
     await request('/api/local/config/week', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'a=1&b=two'
+      body: 'a=1&b=two',
     });
-    expect(dorita.calls.find((c) => c.name === 'setWeek').args).toEqual({ a: '1', b: 'two' });
+    expect(dorita.calls.find((c) => c.name === 'setWeek')!.args).toEqual({ a: '1', b: 'two' });
   });
 
   it('rejects calls that need a body without one', async () => {
     const { request } = setup();
     const res = await request('/api/local/config/week', { method: 'POST' });
     expect(res.status).toBe(400);
-    expect((await res.json()).message).toBe('Invalid arguments.');
+    expect(((await res.json()) as any).message).toBe('Invalid arguments.');
   });
 
   it('returns robot errors as JSON', async () => {
@@ -174,14 +190,14 @@ describe('rest980 app', () => {
   it('discovers the robot IP when none is configured', async () => {
     const { robot, dorita } = setup({ robotIP: '' });
     expect(robot.ip).toBe('10.0.0.9');
-    expect(dorita.calls.find((c) => c.name === 'Local').args[2]).toBe('10.0.0.9');
+    expect((dorita.calls.find((c) => c.name === 'Local')!.args as string[])[2]).toBe('10.0.0.9');
   });
 
   it('streams status as server-sent events', async () => {
     const { request } = setup();
     const res = await request('/api/events');
     expect(res.headers.get('content-type')).toContain('text/event-stream');
-    const reader = res.body.getReader();
+    const reader = res.body!.getReader();
     let text = '';
     while (!text.includes('event: status')) {
       const { value } = await reader.read();
@@ -192,8 +208,6 @@ describe('rest980 app', () => {
   });
 
   describe('with basic auth', () => {
-    const auth = (user, pass) => ({ Authorization: 'Basic ' + Buffer.from(user + ':' + pass).toString('base64') });
-
     it('requires credentials', async () => {
       const { request } = setup({ basicAuthUser: 'admin', basicAuthPass: 'secret' });
       const res = await request('/api/info/version');
