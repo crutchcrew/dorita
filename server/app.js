@@ -220,9 +220,7 @@ function createApp (options) {
     for (const method of route.methods) add(method, route.path, handler);
   }
 
-  async function handle (request) {
-    const url = new URL(request.url);
-
+  async function handle (request, url) {
     if (authEnabled && !checkBasicAuth(request, config.basicAuthUser, config.basicAuthPass)) {
       return new Response('Unauthorized', {
         status: 401,
@@ -247,8 +245,16 @@ function createApp (options) {
   return {
     async fetch (request) {
       const started = Date.now();
-      const response = await handle(request);
-      if (log) log(request.method + ' ' + new URL(request.url).pathname + ' ' + response.status + ' ' + (Date.now() - started) + 'ms');
+      let url;
+      let response;
+      try {
+        // With a malformed Host header Bun.serve passes a relative URL.
+        url = new URL(request.url, 'http://localhost');
+        response = await handle(request, url);
+      } catch (error) {
+        response = url ? errorResponse(500, error.message || String(error)) : errorResponse(400, 'Bad request.');
+      }
+      if (log) log(request.method + ' ' + (url ? url.pathname : request.url) + ' ' + response.status + ' ' + (Date.now() - started) + 'ms');
       return response;
     }
   };

@@ -64,6 +64,11 @@ describe('validateConfig', () => {
     expect(() => validateConfig({ blid: 'a', password: 'b', sslKeyFile: 'key.pem' })).toThrow(/SSL_CERT_FILE/);
   });
 
+  it('requires both basic auth values', () => {
+    expect(() => validateConfig({ blid: 'a', password: 'b', basicAuthUser: 'admin' })).toThrow(/BASIC_AUTH_PASS/);
+    expect(() => validateConfig({ blid: 'a', password: 'b', basicAuthPass: 'secret' })).toThrow(/BASIC_AUTH_USER/);
+  });
+
   it('accepts a valid config', () => {
     expect(() => validateConfig({ blid: 'a', password: 'b' })).not.toThrow();
   });

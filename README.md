@@ -41,7 +41,7 @@ V4 protocol robots are **work in progress** and not yet supported here. These in
 
 ## Runtime and TLS compatibility
 
-dorita980 is developed and tested with [Bun](https://bun.sh) (>= 1.2). The library and the REST server also still run on Node.js (>= 18).
+dorita980 is developed and tested with [Bun](https://bun.sh) (>= 1.2.21). The library and the REST server also still run on Node.js (>= 18).
 
 Bun uses BoringSSL, which does not support the `AES128-SHA256` cipher that dorita980 asks for by default (and that some older robots, e.g. 900 series on firmware 2.x, may require). On Bun, unsupported ciphers are dropped and the runtime's default cipher list is used instead. If your robot fails the TLS handshake under Bun, run the same code with Node.js instead, e.g. `node ./bin/rest980.js`. The REST server shows a hint in the web UI and logs when this looks like the cause.
 

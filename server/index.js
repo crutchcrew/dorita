@@ -12,7 +12,7 @@ function serveWithNode (app, config) {
   const https = require('https');
   const { Readable } = require('stream');
 
-  const handler = async (req, res) => {
+  const handle = async (req, res) => {
     const protocol = config.sslKeyFile ? 'https' : 'http';
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
     const request = new Request(protocol + '://' + (req.headers.host || 'localhost') + req.url, {
@@ -37,6 +37,15 @@ function serveWithNode (app, config) {
       }
     } catch (e) {}
     res.end();
+  };
+
+  // node:http ignores the promise, so a throw (e.g. a malformed Host header
+  // making new Request() fail) would be an unhandled rejection and crash Node.
+  const handler = (req, res) => {
+    handle(req, res).catch(() => {
+      if (!res.headersSent) res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end();
+    });
   };
 
   const server = config.sslKeyFile

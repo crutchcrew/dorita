@@ -105,6 +105,23 @@ for (const useNodeHttp of [false, true]) {
       expect(await get('/api/local/config/week')).toEqual(week);
     });
 
+    it('survives a malformed Host header', async () => {
+      const net = require('net');
+      const raw = await new Promise((resolve, reject) => {
+        const socket = net.connect(server.port, '127.0.0.1', () => {
+          socket.write('GET /ping HTTP/1.1\r\nHost: bad host\r\nConnection: close\r\n\r\n');
+        });
+        let data = '';
+        socket.on('data', (chunk) => { data += chunk; });
+        socket.on('end', () => resolve(data));
+        socket.on('error', reject);
+      });
+      // node:http can't build a Request from it (400); Bun.serve passes a
+      // relative URL that the app resolves.
+      expect(raw).toMatch(useNodeHttp ? /^HTTP\/1\.1 400/ : /^HTTP\/1\.1 200/);
+      expect((await fetch(base + '/ping')).status).toBe(200);
+    });
+
     it('streams state over server-sent events', async () => {
       const controller = new AbortController();
       const res = await fetch(base + '/api/events', { signal: controller.signal });

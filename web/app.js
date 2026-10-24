@@ -90,6 +90,7 @@
     status: null,
     view: {},
     path: [],
+    pathMission: null,
     scheduleDirty: false,
     busyPrefs: new Set(),
     pollTimer: null,
@@ -346,7 +347,10 @@
     form.textContent = '';
     DAYS.forEach((day, i) => {
       const enabled = schedule.cycle[i] && schedule.cycle[i] !== 'none';
-      const time = String(schedule.h[i]).padStart(2, '0') + ':' + String(schedule.m[i]).padStart(2, '0');
+      // Coerce to numbers: these values come from the robot and end up in innerHTML.
+      const h = Math.min(23, Math.max(0, parseInt(schedule.h[i], 10) || 0));
+      const m = Math.min(59, Math.max(0, parseInt(schedule.m[i], 10) || 0));
+      const time = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
       const row = document.createElement('div');
       row.className = 'schedule-row';
       row.innerHTML =
@@ -392,6 +396,12 @@
   }
 
   function addPathPoint (pose, view) {
+    // Start a new path when a new mission starts, like the server does.
+    if (view.nMssn !== undefined && view.nMssn !== ui.pathMission) {
+      ui.pathMission = view.nMssn;
+      ui.path = [];
+      scheduleMapDraw();
+    }
     if (!pose || !pose.point) return;
     if (!view.cycle || view.cycle === 'none') return;
     const last = ui.path[ui.path.length - 1];
@@ -687,6 +697,7 @@
       const status = await api('/api/status');
       ui.status = status;
       ui.path = status.path || [];
+      if (status.state && status.state.cleanMissionStatus) ui.pathMission = status.state.cleanMissionStatus.nMssn;
       if (status.state) {
         ui.view = viewFromState(status.state, ui.view);
         ui.view.rawState = status.state;

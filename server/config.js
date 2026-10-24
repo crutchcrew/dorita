@@ -69,6 +69,9 @@ function validateConfig (config) {
   if (!config.blid || !config.password) {
     throw new Error('Robot credentials not found. Set BLID and PASSWORD (and ROBOT_IP) environment variables, or put them in config/default.json.');
   }
+  if (Boolean(config.basicAuthUser) !== Boolean(config.basicAuthPass)) {
+    throw new Error('Both BASIC_AUTH_USER and BASIC_AUTH_PASS must be set to enable basic auth.');
+  }
   if (Boolean(config.sslKeyFile) !== Boolean(config.sslCertFile)) {
     throw new Error('Both SSL_KEY_FILE and SSL_CERT_FILE must be set to enable HTTPS.');
   }
