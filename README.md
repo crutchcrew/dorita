@@ -13,7 +13,7 @@
 
 </div>
 
-dorita980 is an unofficial SDK for iRobot Roomba robots (Combo 10 Max, j7, i7/i7+, 980, 960, e5, 690, 675 and more). It talks to your robot directly on your local network, so you can plug it into your own home automation or IoT project. It comes in three parts:
+dorita980 is an unofficial SDK for iRobot Roomba robot vaccuums. It talks to your robot directly on your local network, so you can plug it into your own home automation or IoT project. It comes in three parts:
 
 - **A JavaScript library**: start, stop and dock the robot, read its state, change cleaning preferences and schedules, clean specific rooms, and stream live mission data.
 - **A REST API and web UI** (formerly the separate [rest980](https://github.com/koalazak/rest980) project): control the robot from any browser or HTTP client on your network.
