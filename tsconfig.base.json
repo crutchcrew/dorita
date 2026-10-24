@@ -15,6 +15,5 @@
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true
-  },
-  "include": ["index.ts", "lib", "bin", "server", "scripts", "test"]
+  }
 }

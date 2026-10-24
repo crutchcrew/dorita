@@ -4,19 +4,49 @@
   "workspaces": {
     "": {
       "name": "dorita980",
-      "dependencies": {
-        "mqtt": "^2.15.0",
-      },
       "devDependencies": {
         "@types/bun": "^1.4.4",
-        "mqtt-packet": "^5",
         "oxfmt": "^0.74.0",
         "oxlint": "^1.89.0",
         "typescript": "^7.0.2",
       },
     },
+    "packages/dorita980": {
+      "name": "dorita980",
+      "version": "4.0.0",
+      "bin": {
+        "get-roomba-password": "./dist/bin/getpassword.js",
+        "get-roomba-password-cloud": "./dist/bin/getPasswordCloud.js",
+      },
+      "dependencies": {
+        "mqtt": "^2.15.0",
+      },
+    },
+    "packages/mock-robot": {
+      "name": "@dorita980/mock-robot",
+      "version": "0.0.0",
+      "dependencies": {
+        "dorita980": "workspace:*",
+        "mqtt-packet": "^5",
+      },
+    },
+    "packages/rest980": {
+      "name": "rest980",
+      "version": "4.0.0",
+      "bin": {
+        "rest980": "./dist/bin/rest980.js",
+      },
+      "dependencies": {
+        "dorita980": "workspace:^",
+      },
+      "devDependencies": {
+        "@dorita980/mock-robot": "workspace:*",
+      },
+    },
   },
   "packages": {
+    "@dorita980/mock-robot": ["@dorita980/mock-robot@workspace:packages/mock-robot"],
+
     "@oxfmt/binding-android-arm-eabi": ["@oxfmt/binding-android-arm-eabi@0.74.0", "", { "os": "android", "cpu": "arm" }, "sha512-xxQwrf5EPI5zxvuCTW8r6tzCTjPQ+h6+HqJ0iRKRy2zS1yBllt/xLVjoIyUc+FnR7g0a5g1SZv2yyDYhTItLbA=="],
 
     "@oxfmt/binding-android-arm64": ["@oxfmt/binding-android-arm64@0.74.0", "", { "os": "android", "cpu": "arm64" }, "sha512-FJW3sATVvrWbV64al8xofCPZj4500Z/1W0ad7Tg1rcCUyh0EMbuSrsf3jsZS7CEbwQ5fQ0mRhmkc129GFgofSQ=="],
@@ -161,6 +191,8 @@
 
     "d": ["d@1.0.2", "", { "dependencies": { "es5-ext": "^0.10.64", "type": "^2.7.2" } }, "sha512-MOqHvMWF9/9MX6nza0KgvFH4HpMU0EF5uUDXqX/BtxtU8NfB0QzRtJ8Oe/6SuS4kbhyzVJwjd97EA4PKrzJ8bw=="],
 
+    "dorita980": ["dorita980@workspace:packages/dorita980"],
+
     "duplexify": ["duplexify@3.7.1", "", { "dependencies": { "end-of-stream": "^1.0.0", "inherits": "^2.0.1", "readable-stream": "^2.0.0", "stream-shift": "^1.0.0" } }, "sha512-07z8uv2wMyS51kKhD1KsdXJg5WQ6t93RneqRxUHnskXVtlYYkLqM0gqStQZ3pj073g687jPCHrqNfCzawLYh5g=="],
 
     "end-of-stream": ["end-of-stream@1.4.5", "", { "dependencies": { "once": "^1.4.0" } }, "sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg=="],
@@ -250,6 +282,8 @@
     "reinterval": ["reinterval@1.1.0", "", {}, "sha512-QIRet3SYrGp0HUHO88jVskiG6seqUGC5iAG7AwI/BV4ypGcuqk9Du6YQBUOUqm9c8pw1eyLoIaONifRua1lsEQ=="],
 
     "remove-trailing-separator": ["remove-trailing-separator@1.1.0", "", {}, "sha512-/hS+Y0u3aOfIETiaiirUFwDBDzmXPvO+jAfKTitUngIPzdKc6Z0LoFjM/CK5PL4C+eKwHohlHAb6H0VFfmmUsw=="],
+
+    "rest980": ["rest980@workspace:packages/rest980"],
 
     "safe-buffer": ["safe-buffer@5.2.1", "", {}, "sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ=="],
 

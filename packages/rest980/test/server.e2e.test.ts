@@ -2,8 +2,8 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import net from 'node:net';
-import { createMockRobot } from '../scripts/mock-robot.ts';
-import type { MockRobot } from '../scripts/mock-robot.ts';
+import { createMockRobot } from '@dorita980/mock-robot';
+import type { MockRobot } from '@dorita980/mock-robot';
 import { startServer } from '../server/index.ts';
 import type { Config, Server } from '../server/index.ts';
 

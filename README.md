@@ -76,9 +76,9 @@ The cloud API isn't implemented for firmware 2.x and later yet. [Help wanted!](h
 
 ### Runtime and TLS
 
-dorita980 is written in TypeScript and developed and tested on [Bun](https://bun.sh) 1.2.21 or later, which runs the sources directly. The npm package ships compiled JavaScript and type declarations in `dist/`, so the library and the REST server also run on Node.js 20.19 or later, with `import` or `require`. Node.js 22.18 or later can also run the TypeScript sources directly, for example `node bin/rest980.ts`.
+dorita980 is written in TypeScript and developed and tested on [Bun](https://bun.sh) 1.2.21 or later, which runs the sources directly. The npm packages ship compiled JavaScript and type declarations in `dist/`, so the library and the REST server also run on Node.js 20.19 or later, with `import` or `require`. To run the server on Node.js from a clone, build it first with `bun run build`.
 
-By default dorita980 asks for the `AES128-SHA256` cipher, which some older robots need (for example 900 series robots on firmware 2.x). Bun is built on BoringSSL, which doesn't support that cipher, so on Bun it is dropped and the runtime's default ciphers are used instead. **If the TLS handshake with your robot fails under Bun, run the same code with Node.js**, for example `node bin/rest980.ts` from a clone (Node.js 22.18 or later) or `node node_modules/dorita980/dist/bin/rest980.js` from the npm package. The REST server prints a hint in its logs and in the web UI when this looks like the cause.
+By default dorita980 asks for the `AES128-SHA256` cipher, which some older robots need (for example 900 series robots on firmware 2.x). Bun is built on BoringSSL, which doesn't support that cipher, so on Bun it is dropped and the runtime's default ciphers are used instead. **If the TLS handshake with your robot fails under Bun, run the same code with Node.js**, for example `node packages/rest980/dist/bin/rest980.js` from a clone after `bun run build`. The REST server prints a hint in its logs and in the web UI when this looks like the cause.
 
 Newer OpenSSL versions also disable legacy TLS renegotiation, which some robots need. dorita980 turns it back on when it's available. Two environment variables change this behaviour:
 
@@ -234,7 +234,7 @@ Most problems getting the password come down to one of these:
 - **The iRobot app is open.** The robot accepts only one connection at a time. Close the app on your phone, and any other scripts or integrations that use the robot.
 - **The robot isn't reachable.** Check that your computer can reach it with `nc -zv <robotIP> 8883`. If that fails, the problem is your network.
 - **Packets are lost on a slow network** (local method). Run `get-roomba-password` a few times; it relies on UDP.
-- **The TLS handshake fails under Bun.** Try Node.js: `node bin/getpassword.ts <robotIP>` from a clone (Node.js 22.18 or later). See [Runtime and TLS](#runtime-and-tls).
+- **The TLS handshake fails under Bun.** Try Node.js: `node packages/dorita980/bin/getpassword.ts <robotIP>` from a clone (Node.js 22.18 or later). See [Runtime and TLS](#runtime-and-tls).
 - **You pressed the wrong button.** On the 980 it's easy to press CLEAN instead of HOME. Models without a HOME button (such as the 675) use DOCK + SPOT.
 - **The robot isn't docked and awake.** Put it on the Home Base and short‑press CLEAN once to wake it, without starting a cleaning run.
 - **The robot was never set up.** Configure it once with the official app first; that's what sets its password.
@@ -242,7 +242,7 @@ Most problems getting the password come down to one of these:
 
 ## REST API and web UI
 
-dorita980 includes an HTTP server (formerly [rest980](https://github.com/koalazak/rest980)) that exposes the library as a REST API and serves a web UI for controlling your robot from any browser on your network.
+This repository includes an HTTP server, rest980 (formerly a [separate project](https://github.com/koalazak/rest980), now in [`packages/rest980`](packages/rest980)), that exposes the library as a REST API and serves a web UI for controlling your robot from any browser on your network.
 
 The web UI shows the robot's status, battery and bin. It can start, pause, resume, stop and dock the robot, locate it and empty the bin, change cleaning preferences and the weekly schedule, and draw a live map of the cleaning path on robots that report their position. With firmware 2.x and `keepAlive` on, updates are pushed live; with firmware 1.x the page polls the robot.
 
@@ -262,7 +262,7 @@ rest980 listening on http://localhost:3000
 robot: connected
 ```
 
-Then open `http://<server-ip>:3000`. If your robot needs a cipher Bun doesn't have, start the server with `node bin/rest980.ts` (Node.js 22.18 or later) instead (see [Runtime and TLS](#runtime-and-tls)).
+Then open `http://<server-ip>:3000`. If your robot needs a cipher Bun doesn't have, run `bun run build` and start the server with `node packages/rest980/dist/bin/rest980.js` instead (see [Runtime and TLS](#runtime-and-tls)).
 
 > [!NOTE]
 > With `KEEP_ALIVE=yes` (the default) the server holds the robot's only local connection, so the official app falls back to the cloud.
@@ -650,16 +650,24 @@ robot.on('update', (data) => console.log(data));
 
 ## Development
 
-Everything is TypeScript: the library in `lib/` and `index.ts`, the server in `server/`, the CLI scripts in `bin/`, and the web UI in `web/app.ts`, which the server strips of types when it serves it, so there is no bundler in development. Code is formatted with [oxfmt](https://oxc.rs/docs/guide/usage/formatter) and linted with [oxlint](https://oxc.rs/docs/guide/usage/linter).
+This repository is a [Bun workspace](https://bun.sh/docs/install/workspaces) with three packages:
+
+| Package                                      | Contents                                                                                                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/dorita980`](packages/dorita980)   | The library (`index.ts` and `lib/`) and the `get-roomba-password` and `get-roomba-password-cloud` scripts (`bin/`). Published to npm as `dorita980`.                      |
+| [`packages/rest980`](packages/rest980)       | The REST server (`server/`, started by `bin/rest980.ts`) and the web UI (`web/app.ts`, which the server strips of types when it serves it, so no bundler in development). |
+| [`packages/mock-robot`](packages/mock-robot) | A fake firmware 2.x robot for the tests and for trying the web UI. Private.                                                                                               |
+
+Everything is TypeScript, and Bun runs the sources directly: inside the workspace, the `paths` in each package's `tsconfig.json` point `dorita980` imports at its sources, so nothing needs building first. Code is formatted with [oxfmt](https://oxc.rs/docs/guide/usage/formatter) and linted with [oxlint](https://oxc.rs/docs/guide/usage/linter).
 
 ```bash
 bun install
 bun run check        # format check, lint, typecheck and tests
-bun test             # unit and end-to-end tests (uses a mock robot)
-bun run typecheck    # tsc for the library/server and for the web UI
+bun test             # unit and end-to-end tests of every package (uses a mock robot)
+bun run typecheck    # tsc for every package and for the web UI
 bun run lint         # oxlint
 bun run format       # oxfmt
-bun run build        # compile to dist/ (what gets published to npm)
+bun run build        # compile dorita980 and rest980 to their dist/ folders (what gets published to npm)
 bun run mock-robot   # a fake firmware 2.x robot on 127.0.0.1:8883
 ```
 

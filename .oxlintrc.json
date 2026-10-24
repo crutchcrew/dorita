@@ -10,20 +10,31 @@
     "node": true
   },
   "rules": {
-    "no-unused-vars": ["error", { "args": "after-used", "caughtErrors": "none" }],
+    "no-unused-vars": [
+      "error",
+      {
+        "args": "after-used",
+        "caughtErrors": "none"
+      }
+    ],
     "typescript/consistent-type-imports": "error",
     "import/no-cycle": "error",
     "eqeqeq": ["error", "smart"]
   },
   "overrides": [
     {
-      "files": ["web/**"],
-      "env": { "browser": true, "node": false }
+      "files": ["packages/rest980/web/**"],
+      "env": {
+        "browser": true,
+        "node": false
+      }
     },
     {
-      "files": ["test/**"],
-      "rules": { "typescript/no-explicit-any": "off" }
+      "files": ["packages/*/test/**"],
+      "rules": {
+        "typescript/no-explicit-any": "off"
+      }
     }
   ],
-  "ignorePatterns": ["dist/**", "coverage/**"]
+  "ignorePatterns": ["**/dist/**", "**/coverage/**"]
 }

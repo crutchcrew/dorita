@@ -4,6 +4,7 @@ import { Robot } from '../server/robot.ts';
 import type { DoritaModule } from '../server/robot.ts';
 import type { Config } from '../server/config.ts';
 import pkg from '../package.json' with { type: 'json' };
+import doritaPkg from 'dorita980/package.json' with { type: 'json' };
 
 const baseConfig: Config = {
   port: 0,
@@ -103,7 +104,8 @@ describe('rest980 app', () => {
   it('reports versions, protocol and capabilities', async () => {
     const { request } = setup();
     const version = (await (await request('/api/info/version')).json()) as any;
-    expect(version.dorita980).toBe(pkg.version);
+    expect(version.rest980).toBe(pkg.version);
+    expect(version.dorita980).toBe(doritaPkg.version);
     expect(version.firmwareVersion).toBe(1);
 
     const protocol = (await (await request('/api/info/protocol')).json()) as any;
