@@ -7,7 +7,8 @@ ENV NODE_ENV=production
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
-COPY index.js ./
+# Bun runs the TypeScript sources directly.
+COPY index.ts ./
 COPY lib ./lib
 COPY bin ./bin
 COPY server ./server
@@ -19,4 +20,4 @@ EXPOSE 3000
 
 USER bun
 
-CMD ["bun", "bin/rest980.js"]
+CMD ["bun", "bin/rest980.ts"]

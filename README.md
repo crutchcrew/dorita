@@ -51,22 +51,22 @@ Not sure which firmware your robot runs? [Check your robot version](http://homes
 
 | Feature                                                   | 1.6.x Local | 1.6.x Cloud | 2.x Local | 2.x Cloud | 3.x Local |
 | --------------------------------------------------------- | :---------: | :---------: | :-------: | :-------: | :-------: |
-| Clean, start, stop, pause, dock, resume, room clean, find | ✅ | ✅ | ✅ | ⏳ | ✅ |
-| Get and set preferences                                   | ✅ | ✅ | ✅ | ⏳ | ✅ |
-| Get x, y, θ position                                      | ✅ | ✅ | ✅ | ⏳ | — |
-| Get mission                                               | ✅ | ✅ | ✅ | ⏳ | ✅ |
-| Get mission number                                        | ❌ | ❌ | ✅ | ⏳ | ✅ |
-| Get general info                                          | ✅ | ✅ | ✅ | ⏳ | ✅ |
-| Get and set schedule                                      | ✅ | ✅ | ✅ | ⏳ | ✅ |
-| Carpet Boost (performance, eco, auto)                     | ✅ | ✅ | ✅ | ⏳ | — |
-| Edge Clean                                                | ✅ | ✅ | ✅ | ⏳ | — |
-| Cleaning passes (auto, one, two)                          | ✅ | ✅ | ✅ | ⏳ | — |
-| Always Finish                                             | ✅ | ✅ | ✅ | ⏳ | — |
-| Custom MQTT events                                        | — | — | ✅ | ⏳ | ✅ |
-| HTTP API                                                  | ✅ | ✅ | — | — | — |
-| Robot IP discovery                                        | ✅ | — | ✅ | — | ✅ |
-| Get BLID and password                                     | ✅ | — | ✅ | — | ✅ |
-| Several clients at once                                   | ✅ | ✅ | ❌ | ⏳ | ❌ |
+| Clean, start, stop, pause, dock, resume, room clean, find |     ✅      |     ✅      |    ✅     |    ⏳     |    ✅     |
+| Get and set preferences                                   |     ✅      |     ✅      |    ✅     |    ⏳     |    ✅     |
+| Get x, y, θ position                                      |     ✅      |     ✅      |    ✅     |    ⏳     |     —     |
+| Get mission                                               |     ✅      |     ✅      |    ✅     |    ⏳     |    ✅     |
+| Get mission number                                        |     ❌      |     ❌      |    ✅     |    ⏳     |    ✅     |
+| Get general info                                          |     ✅      |     ✅      |    ✅     |    ⏳     |    ✅     |
+| Get and set schedule                                      |     ✅      |     ✅      |    ✅     |    ⏳     |    ✅     |
+| Carpet Boost (performance, eco, auto)                     |     ✅      |     ✅      |    ✅     |    ⏳     |     —     |
+| Edge Clean                                                |     ✅      |     ✅      |    ✅     |    ⏳     |     —     |
+| Cleaning passes (auto, one, two)                          |     ✅      |     ✅      |    ✅     |    ⏳     |     —     |
+| Always Finish                                             |     ✅      |     ✅      |    ✅     |    ⏳     |     —     |
+| Custom MQTT events                                        |      —      |      —      |    ✅     |    ⏳     |    ✅     |
+| HTTP API                                                  |     ✅      |     ✅      |     —     |     —     |     —     |
+| Robot IP discovery                                        |     ✅      |      —      |    ✅     |     —     |    ✅     |
+| Get BLID and password                                     |     ✅      |      —      |    ✅     |     —     |    ✅     |
+| Several clients at once                                   |     ✅      |     ✅      |    ❌     |    ⏳     |    ❌     |
 
 ✅ supported · ❌ not supported · ⏳ pending · — not applicable
 
@@ -76,15 +76,15 @@ The cloud API isn't implemented for firmware 2.x and later yet. [Help wanted!](h
 
 ### Runtime and TLS
 
-dorita980 is developed and tested on [Bun](https://bun.sh) 1.2.21 or later. The library and the REST server also run on Node.js 18 or later.
+dorita980 is written in TypeScript and developed and tested on [Bun](https://bun.sh) 1.2.21 or later, which runs the sources directly. The npm package ships compiled JavaScript and type declarations in `dist/`, so the library and the REST server also run on Node.js 20.19 or later, with `import` or `require`. Node.js 22.18 or later can also run the TypeScript sources directly, for example `node bin/rest980.ts`.
 
-By default dorita980 asks for the `AES128-SHA256` cipher, which some older robots need (for example 900 series robots on firmware 2.x). Bun is built on BoringSSL, which doesn't support that cipher, so on Bun it is dropped and the runtime's default ciphers are used instead. **If the TLS handshake with your robot fails under Bun, run the same code with Node.js**, for example `node ./bin/rest980.js`. The REST server prints a hint in its logs and in the web UI when this looks like the cause.
+By default dorita980 asks for the `AES128-SHA256` cipher, which some older robots need (for example 900 series robots on firmware 2.x). Bun is built on BoringSSL, which doesn't support that cipher, so on Bun it is dropped and the runtime's default ciphers are used instead. **If the TLS handshake with your robot fails under Bun, run the same code with Node.js**, for example `node bin/rest980.ts` from a clone (Node.js 22.18 or later) or `node node_modules/dorita980/dist/bin/rest980.js` from the npm package. The REST server prints a hint in its logs and in the web UI when this looks like the cause.
 
 Newer OpenSSL versions also disable legacy TLS renegotiation, which some robots need. dorita980 turns it back on when it's available. Two environment variables change this behaviour:
 
-| Variable           | Effect                                                                                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ROBOT_TLS_LEGACY` | Set to `0` to turn legacy renegotiation off.                                                                                                   |
+| Variable           | Effect                                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ROBOT_TLS_LEGACY` | Set to `0` to turn legacy renegotiation off.                                                                                                    |
 | `ROBOT_CIPHERS`    | A custom cipher list for the robot connection, e.g. `ROBOT_CIPHERS=AES128-SHA bun myapp.js`. The runtime ignores any cipher it doesn't support. |
 
 ## Getting started
@@ -106,7 +106,7 @@ Every request needs your robot's **BLID** (its username) and **password**. Follo
 Create `myapp.js`:
 
 ```javascript
-const dorita980 = require('dorita980');
+import dorita980 from 'dorita980';
 
 const robot = new dorita980.Local('MyBlid', 'MyPassword', '192.168.1.104'); // your robot's IP address
 
@@ -234,7 +234,7 @@ Most problems getting the password come down to one of these:
 - **The iRobot app is open.** The robot accepts only one connection at a time. Close the app on your phone, and any other scripts or integrations that use the robot.
 - **The robot isn't reachable.** Check that your computer can reach it with `nc -zv <robotIP> 8883`. If that fails, the problem is your network.
 - **Packets are lost on a slow network** (local method). Run `get-roomba-password` a few times; it relies on UDP.
-- **The TLS handshake fails under Bun.** Try Node.js: `node ./bin/getpassword.js <robotIP>`. See [Runtime and TLS](#runtime-and-tls).
+- **The TLS handshake fails under Bun.** Try Node.js: `node bin/getpassword.ts <robotIP>` from a clone (Node.js 22.18 or later). See [Runtime and TLS](#runtime-and-tls).
 - **You pressed the wrong button.** On the 980 it's easy to press CLEAN instead of HOME. Models without a HOME button (such as the 675) use DOCK + SPOT.
 - **The robot isn't docked and awake.** Put it on the Home Base and short‑press CLEAN once to wake it, without starting a cleaning run.
 - **The robot was never set up.** Configure it once with the official app first; that's what sets its password.
@@ -262,7 +262,7 @@ rest980 listening on http://localhost:3000
 robot: connected
 ```
 
-Then open `http://<server-ip>:3000`. If your robot needs a cipher Bun doesn't have, start the server with `node ./bin/rest980.js` instead (see [Runtime and TLS](#runtime-and-tls)).
+Then open `http://<server-ip>:3000`. If your robot needs a cipher Bun doesn't have, start the server with `node bin/rest980.ts` (Node.js 22.18 or later) instead (see [Runtime and TLS](#runtime-and-tls)).
 
 > [!NOTE]
 > With `KEEP_ALIVE=yes` (the default) the server holds the robot's only local connection, so the official app falls back to the cloud.
@@ -322,15 +322,15 @@ Errors come back with an HTTP status code and a JSON body of the form `{"message
 
 #### Info and status
 
-| Endpoint                     | Description                                                                                                                                                                                                                                         |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /ping`                  | Health check.                                                                                                                                                                                                                                       |
-| `GET /api/info/version`      | dorita980, Node.js and Bun versions, and `firmwareVersion`.                                                                                                                                                                                        |
-| `GET /api/info/protocol`     | Protocol and transport, `keepAlive`, robot IP.                                                                                                                                                                                                      |
-| `GET /api/info/capabilities` | Local, cloud and live state support, and the available actions.                                                                                                                                                                                    |
-| `GET /api/status`            | Connection status, last connection error, latest robot state (firmware 2.x) and the current mission path.                                                                                                                                         |
+| Endpoint                     | Description                                                                                                                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /ping`                  | Health check.                                                                                                                                                                                                                                         |
+| `GET /api/info/version`      | dorita980, Node.js and Bun versions, and `firmwareVersion`.                                                                                                                                                                                           |
+| `GET /api/info/protocol`     | Protocol and transport, `keepAlive`, robot IP.                                                                                                                                                                                                        |
+| `GET /api/info/capabilities` | Local, cloud and live state support, and the available actions.                                                                                                                                                                                       |
+| `GET /api/status`            | Connection status, last connection error, latest robot state (firmware 2.x) and the current mission path.                                                                                                                                             |
 | `GET /api/events`            | A [server‑sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) stream of `status`, `state` (full robot state, throttled) and `mission` (`cleanMissionStatus`, `pose`, `bin`) events. Needs firmware 2.x and `keepAlive`. |
-| `DELETE /api/path`           | Clears the tracked mission path.                                                                                                                                                                                                                    |
+| `DELETE /api/path`           | Clears the tracked mission path.                                                                                                                                                                                                                      |
 
 #### Local actions
 
@@ -363,18 +363,18 @@ curl -X POST http://192.168.1.110:3000/api/local/action/cleanRoom \
 
 `/api/local/config/<name>`: use `GET` to read a setting, and `POST` with a JSON (or form) body to change it.
 
-| Name                                                              | Methods                                         |
-| ----------------------------------------------------------------- | ----------------------------------------------- |
-| `preferences`                                                     | `GET`, `POST`                                   |
-| `week`                                                            | `GET`, `POST`                                   |
-| `time`                                                            | `GET`. `POST` only on firmware 1.x.             |
-| `ptime`                                                           | `POST`, firmware 1.x only                       |
-| `bbrun`, `cloud`                                                  | `GET`                                           |
-| `langs`                                                           | `GET` (set the language through `preferences`)  |
-| `carpetBoost/auto`, `carpetBoost/performance`, `carpetBoost/eco`  | `POST`                                          |
-| `edgeClean/on`, `edgeClean/off`                                   | `POST`                                          |
-| `cleaningPasses/auto`, `cleaningPasses/one`, `cleaningPasses/two` | `POST`                                          |
-| `alwaysFinish/on`, `alwaysFinish/off`                             | `POST`                                          |
+| Name                                                              | Methods                                        |
+| ----------------------------------------------------------------- | ---------------------------------------------- |
+| `preferences`                                                     | `GET`, `POST`                                  |
+| `week`                                                            | `GET`, `POST`                                  |
+| `time`                                                            | `GET`. `POST` only on firmware 1.x.            |
+| `ptime`                                                           | `POST`, firmware 1.x only                      |
+| `bbrun`, `cloud`                                                  | `GET`                                          |
+| `langs`                                                           | `GET` (set the language through `preferences`) |
+| `carpetBoost/auto`, `carpetBoost/performance`, `carpetBoost/eco`  | `POST`                                         |
+| `edgeClean/on`, `edgeClean/off`                                   | `POST`                                         |
+| `cleaningPasses/auto`, `cleaningPasses/one`, `cleaningPasses/two` | `POST`                                         |
+| `alwaysFinish/on`, `alwaysFinish/off`                             | `POST`                                         |
 
 ```http
 POST http://192.168.1.110:3000/api/local/config/week
@@ -450,28 +450,28 @@ Each command resolves with `{"ok": null}`.
 | `resume()`        | Resume a paused run.                                                           |
 | `stop()`          | Stop the current run.                                                          |
 | `dock()`          | Send the robot home. **Call `pause()` or `stop()` first.**                     |
-| `find()`          | Make the robot beep so you can find it. Does nothing while it's on the dock.  |
+| `find()`          | Make the robot beep so you can find it. Does nothing while it's on the dock.   |
 | `evac()`          | Empty the bin into the Clean Base.                                             |
 | `train()`         | Start a mapping run.                                                           |
 
 ### Reading state
 
-| Method                    | Resolves with                                                                                                         |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `getRobotState(fields)`   | The full robot state, once every field in the `fields` array has been reported.                                       |
+| Method                    | Resolves with                                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `getRobotState(fields)`   | The full robot state, once every field in the `fields` array has been reported.                                      |
 | `getPreferences()`        | The full robot state, once `cleanMissionStatus`, `cleanSchedule`, `name`, `vacHigh` and `signal` have been reported. |
 | `getMission()`            | `{ cleanMissionStatus, bin, batPct }`                                                                                |
-| `getBasicMission()`       | Same as `getMission()`. Kept for compatibility.                                                                       |
-| `getWeek()`               | The weekly schedule (`cleanSchedule`).                                                                                |
-| `getTime()`               | The robot's UTC time, e.g. `1487100141`.                                                                              |
-| `getSys()`                | Hardware and software versions, capabilities, battery type, bin, etc.                                                 |
-| `getSKU()`                | The robot's SKU, e.g. `'R98----'`.                                                                                    |
+| `getBasicMission()`       | Same as `getMission()`. Kept for compatibility.                                                                      |
+| `getWeek()`               | The weekly schedule (`cleanSchedule`).                                                                               |
+| `getTime()`               | The robot's UTC time, e.g. `1487100141`.                                                                             |
+| `getSys()`                | Hardware and software versions, capabilities, battery type, bin, etc.                                                |
+| `getSKU()`                | The robot's SKU, e.g. `'R98----'`.                                                                                   |
 | `getBbrun()`              | Run statistics: hours, area, and stuck, cliff and bump counts.                                                       |
-| `getLangs()`              | Available languages, e.g. `[{ 'en-US': 0 }, { 'fr-FR': 1 }, …]`.                                                      |
-| `getWirelessStatus()`     | `{ wifistat, netinfo }`                                                                                               |
-| `getWirelessConfig()`     | `{ wlcfg, netinfo }`                                                                                                  |
-| `getWirelessLastStatus()` | `{ wifistat, wlcfg }`                                                                                                 |
-| `getCloudConfig()`        | The cloud environment, e.g. `'prod'`.                                                                                 |
+| `getLangs()`              | Available languages, e.g. `[{ 'en-US': 0 }, { 'fr-FR': 1 }, …]`.                                                     |
+| `getWirelessStatus()`     | `{ wifistat, netinfo }`                                                                                              |
+| `getWirelessConfig()`     | `{ wlcfg, netinfo }`                                                                                                 |
+| `getWirelessLastStatus()` | `{ wifistat, wlcfg }`                                                                                                |
+| `getCloudConfig()`        | The cloud environment, e.g. `'prod'`.                                                                                |
 
 The state starts out empty and fills in as the robot reports data. To wait for specific fields:
 
@@ -584,7 +584,7 @@ These shortcuts set the right flags for you:
 await robot.setWeek({
   cycle: ['none', 'start', 'start', 'start', 'start', 'start', 'start'],
   h: [10, 10, 10, 10, 10, 10, 10],
-  m: [30, 30, 30, 30, 30, 30, 30]
+  m: [30, 30, 30, 30, 30, 30, 30],
 });
 ```
 
@@ -599,8 +599,8 @@ await robot.cleanRoom({
   user_pmapv_id: '190917T20125Z',
   regions: [
     { region_id: '5', region_name: 'Hallway', region_type: 'hallway', type: 'rid' },
-    { region_id: '1', region_name: 'Kitchen', region_type: 'kitchen', type: 'rid' }
-  ]
+    { region_id: '1', region_name: 'Kitchen', region_type: 'kitchen', type: 'rid' },
+  ],
 });
 ```
 
@@ -612,7 +612,7 @@ The easiest way to find these values is to start a room clean from the iRobot ap
 
 ```javascript
 // cmd messages: { command, time, initiator }
-const command = { command: 'clean', time: Date.now() / 1000 | 0, initiator: 'localApp' };
+const command = { command: 'clean', time: (Date.now() / 1000) | 0, initiator: 'localApp' };
 robot.publish('cmd', JSON.stringify(command), (err) => {
   if (err) console.error(err);
 });
@@ -650,10 +650,16 @@ robot.on('update', (data) => console.log(data));
 
 ## Development
 
+Everything is TypeScript: the library in `lib/` and `index.ts`, the server in `server/`, the CLI scripts in `bin/`, and the web UI in `web/app.ts`, which the server strips of types when it serves it, so there is no bundler in development. Code is formatted with [oxfmt](https://oxc.rs/docs/guide/usage/formatter) and linted with [oxlint](https://oxc.rs/docs/guide/usage/linter).
+
 ```bash
 bun install
+bun run check        # format check, lint, typecheck and tests
 bun test             # unit and end-to-end tests (uses a mock robot)
-bun run lint
+bun run typecheck    # tsc for the library/server and for the web UI
+bun run lint         # oxlint
+bun run format       # oxfmt
+bun run build        # compile to dist/ (what gets published to npm)
 bun run mock-robot   # a fake firmware 2.x robot on 127.0.0.1:8883
 ```
 
