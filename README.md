@@ -664,6 +664,6 @@ bun run mock-robot
 BLID=mockblid PASSWORD=mockpass ROBOT_IP=127.0.0.1 bun start
 ```
 
-## Author
+## Credits
 
-Created by [Facu ZAK](https://github.com/koalazak). Released under the [MIT License](LICENSE).
+Original implementation created by [Facu ZAK](https://github.com/koalazak). [Dorita980](https://github.com/koalazak/dorita980) | [Rest980](https://github.com/koalazak/rest980)
