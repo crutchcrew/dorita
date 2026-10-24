@@ -40,3 +40,7 @@ devtest.js
 
 .DS_Store
 
+
+# Local server configuration
+.env
+config/default.json

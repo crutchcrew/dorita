@@ -1,14 +1,14 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 'use strict';
 
-const request = require('request');
 const tls = require('tls');
-const { constants } = require('crypto');
+const { send } = require('../lib/http');
+const { robotTlsOptions } = require('../lib/tls');
 const discovery = require('../lib/discovery');
 
 if (!process.argv[2]) {
-  console.log('Usage: npm run getpassword <robot_ip_address> [firmware version]');
+  console.log('Usage: bun run getpassword <robot_ip_address> [firmware version]');
   process.exit();
 }
 
@@ -38,12 +38,8 @@ function checkV1 (rid) {
 
   requestOptions.body = '{"do":"get","args":["passwd"],"id":' + rid + '}';
 
-  request(requestOptions, function (error, response, body) {
-    if (error) {
-      console.log('Fatal error connecting to robot. Please verify the IP address and connectivity:', error);
-      process.exit(1);
-    }
-
+  send(requestOptions).then(function (response) {
+    const body = response.body;
     if (response.statusCode === 401) {
       setTimeout(function () { checkV1(++rid); }, 2000);
     } else if (response.statusCode === 200) {
@@ -56,21 +52,19 @@ function checkV1 (rid) {
       console.log('Unespected response. Checking again...');
       setTimeout(function () { checkV1(++rid); }, 2000);
     }
+  }).catch(function (error) {
+    console.log('Fatal error connecting to robot. Please verify the IP address and connectivity:', error);
+    process.exit(1);
   });
 }
 
 function getBlid (rid, pass) {
   requestOptions.body = '{"do":"get","args":["sys"],"id":' + rid + '}';
-  requestOptions.headers['Authorization'] = 'Basic ' + new Buffer('user:' + pass).toString('base64');
+  requestOptions.headers['Authorization'] = 'Basic ' + Buffer.from('user:' + pass).toString('base64');
 
-  request(requestOptions, function (error, response, body) {
-    if (error) {
-      console.log('Fatal error getting username/blid:', error);
-      process.exit(1);
-    }
-
+  send(requestOptions).then(function (response) {
     if (response.statusCode === 200) {
-      const blid = JSON.parse(body).ok.blid.map(function (dec) {
+      const blid = JSON.parse(response.body).ok.blid.map(function (dec) {
         return (dec + 0x10000).toString(16).substr(-2).toUpperCase();
       }).join('');
 
@@ -79,6 +73,9 @@ function getBlid (rid, pass) {
     } else {
       console.log('Unespected error getting username/blid');
     }
+  }).catch(function (error) {
+    console.log('Fatal error getting username/blid:', error);
+    process.exit(1);
   });
 }
 
@@ -89,17 +86,15 @@ function checkV2 () {
     console.log(robotData);
   });
   const packet = 'f005efcc3b2900';
-  var tlsOptions = {
-    timeout: 10000,
-    rejectUnauthorized: false,
-    ciphers: process.env.ROBOT_CIPHERS || 'AES128-SHA256,TLS_AES_256_GCM_SHA384'
-  };
-  if (process.env.ROBOT_TLS_LEGACY !== '0' && constants && constants.SSL_OP_LEGACY_SERVER_CONNECT) {
-    tlsOptions.secureOptions = constants.SSL_OP_LEGACY_SERVER_CONNECT;
-  }
+  var tlsOptions = Object.assign({ timeout: 10000 }, robotTlsOptions({}, 'AES128-SHA256:TLS_AES_256_GCM_SHA384'));
 
   var client = tls.connect(8883, host, tlsOptions, function () {
-    client.write(new Buffer(packet, 'hex'));
+    client.write(Buffer.from(packet, 'hex'));
+  });
+
+  client.on('error', function (error) {
+    console.log('Error connecting to robot:', error.message);
+    process.exit(1);
   });
 
   client.on('data', function (data) {
@@ -110,7 +105,7 @@ function checkV2 () {
     if (data.length <= 7) {
       console.log('Error getting password. Follow the instructions and try again.');
     } else {
-      console.log('Password=> ' + new Buffer(data).slice(sliceFrom).toString() + ' <= Yes, all this string.');
+      console.log('Password=> ' + Buffer.from(data).slice(sliceFrom).toString() + ' <= Yes, all this string.');
       console.log('Use this credentials in dorita980 lib :)');
     }
     client.end();

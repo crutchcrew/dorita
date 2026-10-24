@@ -1,30 +1,25 @@
-/* global it describe */
 'use strict';
 
-const proxyquire = require('proxyquire');
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
-chai.use(chaiAsPromised);
-
-const expect = chai.expect;
+const { describe, it, expect, beforeEach, afterEach, spyOn } = require('bun:test');
+const http = require('../lib/http');
 
 var mockRequest = function (options) {
-  expect(options.method).to.be.equal('POST');
-  expect(options).to.have.property('headers');
-  expect(options.headers['User-Agent']).to.be.equal('aspen%20production/2618 CFNetwork/758.3.15 Darwin/15.4.0');
-  expect(options.headers['Accept']).to.be.equal('*/*');
-  expect(options.headers['Content-Type']).to.be.equal('application/json');
-  expect(options.uri).to.be.equal('https://192.168.1.104:443/umi');
-  expect(options.headers).to.have.property('Authorization');
+  expect(options.method).toBe('POST');
+  expect(options).toHaveProperty('headers');
+  expect(options.headers['User-Agent']).toBe('aspen%20production/2618 CFNetwork/758.3.15 Darwin/15.4.0');
+  expect(options.headers['Accept']).toBe('*/*');
+  expect(options.headers['Content-Type']).toBe('application/json');
+  expect(options.uri).toBe('https://192.168.1.104:443/umi');
+  expect(options.headers).toHaveProperty('Authorization');
 
   switch (options.headers['Authorization'].split(' ')[1]) {
-    case new Buffer('user:123456_bad').toString('base64'):
+    case Buffer.from('user:123456_bad').toString('base64'):
       return Promise.resolve('bad json');
-    case new Buffer('user:123456_getprefs_err').toString('base64'):
+    case Buffer.from('user:123456_getprefs_err').toString('base64'):
       return Promise.resolve(JSON.stringify({'error': -12345, 'body': options.body}));
-    case new Buffer('user:123456_getmission_err').toString('base64'):
+    case Buffer.from('user:123456_getmission_err').toString('base64'):
       return Promise.resolve(JSON.stringify({'error': -12345, 'body': options.body}));
-    case new Buffer('user:123456_getprefs').toString('base64'):
+    case Buffer.from('user:123456_getprefs').toString('base64'):
       if (JSON.parse(options.body).do === 'get') {
         let resp = {
           ok: {
@@ -40,7 +35,7 @@ var mockRequest = function (options) {
       } else {
         return Promise.resolve(JSON.stringify({'ok': null, 'body': options.body}));
       }
-    case new Buffer('user:123456_getmission').toString('base64'):
+    case Buffer.from('user:123456_getmission').toString('base64'): {
       let resp = {
         ok: {
           flags: 4
@@ -49,14 +44,21 @@ var mockRequest = function (options) {
         body: options.body
       };
       return Promise.resolve(JSON.stringify(resp));
+    }
     default:
-      expect(options.headers['Authorization']).to.be.equal('Basic ' + new Buffer('user:mypassword').toString('base64'));
+      expect(options.headers['Authorization']).toBe('Basic ' + Buffer.from('user:mypassword').toString('base64'));
       return Promise.resolve(JSON.stringify({'ok': null, 'body': options.body}));
   }
 };
 
-const Dorita980Local = proxyquire('../lib/v1/local.js', {
-  'request-promise': mockRequest
+const Dorita980Local = require('../lib/v1/local.js');
+
+let requestSpy;
+beforeEach(() => {
+  requestSpy = spyOn(http, 'request').mockImplementation(mockRequest);
+});
+afterEach(() => {
+  requestSpy.mockRestore();
 });
 
 function generateBody (method, command, args, rid) {
@@ -68,27 +70,27 @@ describe('dorita980 local instance', () => {
   it('should require user/blid', () => {
     expect(function () {
       let viaLocal = new Dorita980Local();
-      expect(viaLocal).to.be.instanceof(Object);
-    }).to.throw(/robotID is required./);
+      expect(viaLocal).toBeInstanceOf(Object);
+    }).toThrow(/robotID is required./);
   });
 
   it('should require password', () => {
     expect(function () {
       let viaLocal = new Dorita980Local('myblid123');
-      expect(viaLocal).to.be.instanceof(Object);
-    }).to.throw(/password is required./);
+      expect(viaLocal).toBeInstanceOf(Object);
+    }).toThrow(/password is required./);
   });
 
   it('should require host', () => {
     expect(function () {
       let viaLocal = new Dorita980Local('myuser', 'mypassword');
-      expect(viaLocal).to.be.instanceof(Object);
-    }).to.throw(/host is required./);
+      expect(viaLocal).toBeInstanceOf(Object);
+    }).toThrow(/host is required./);
   });
 
   it('should return an object', () => {
     let viaLocal = new Dorita980Local('myuser', 'mypassword', '192.168.1.104');
-    expect(viaLocal).to.be.instanceof(Object);
+    expect(viaLocal).toBeInstanceOf(Object);
   });
 });
 
@@ -96,55 +98,55 @@ describe('dorita980 Cleaning Preferences helpers', () => {
   it('should return decoded Cleaning Preferences for 1024 flag', () => {
     let viaLocal = new Dorita980Local('myuser', 'mypassword', '192.168.1.104');
     let preferences = viaLocal.decodeCleaningPreferences(1024);
-    expect(preferences.carpetBoost).be.equal('auto');
-    expect(preferences.edgeClean).be.equal(true);
-    expect(preferences.cleaningPasses).be.equal('1');
-    expect(preferences.alwaysFinish).be.equal(true);
+    expect(preferences.carpetBoost).toBe('auto');
+    expect(preferences.edgeClean).toBe(true);
+    expect(preferences.cleaningPasses).toBe('1');
+    expect(preferences.alwaysFinish).toBe(true);
   });
 
   it('should return decoded Cleaning Preferences for 1058 flag', () => {
     let viaLocal = new Dorita980Local('myuser', 'mypassword', '192.168.1.104');
     let preferences = viaLocal.decodeCleaningPreferences(1058);
-    expect(preferences.carpetBoost).be.equal('auto');
-    expect(preferences.edgeClean).be.equal(false);
-    expect(preferences.cleaningPasses).be.equal('1');
-    expect(preferences.alwaysFinish).be.equal(false);
+    expect(preferences.carpetBoost).toBe('auto');
+    expect(preferences.edgeClean).toBe(false);
+    expect(preferences.cleaningPasses).toBe('1');
+    expect(preferences.alwaysFinish).toBe(false);
   });
 
   it('should return decoded Cleaning Preferences for 1105 flag', () => {
     let viaLocal = new Dorita980Local('myuser', 'mypassword', '192.168.1.104');
     let preferences = viaLocal.decodeCleaningPreferences(1105);
-    expect(preferences.carpetBoost).be.equal('performance');
-    expect(preferences.edgeClean).be.equal(true);
-    expect(preferences.cleaningPasses).be.equal('2');
-    expect(preferences.alwaysFinish).be.equal(true);
+    expect(preferences.carpetBoost).toBe('performance');
+    expect(preferences.edgeClean).toBe(true);
+    expect(preferences.cleaningPasses).toBe('2');
+    expect(preferences.alwaysFinish).toBe(true);
   });
 
   it('should return decoded Cleaning Preferences for 1072 flag', () => {
     let viaLocal = new Dorita980Local('myuser', 'mypassword', '192.168.1.104');
     let preferences = viaLocal.decodeCleaningPreferences(1072);
-    expect(preferences.carpetBoost).be.equal('eco');
-    expect(preferences.edgeClean).be.equal(true);
-    expect(preferences.cleaningPasses).be.equal('1');
-    expect(preferences.alwaysFinish).be.equal(false);
+    expect(preferences.carpetBoost).toBe('eco');
+    expect(preferences.edgeClean).toBe(true);
+    expect(preferences.cleaningPasses).toBe('1');
+    expect(preferences.alwaysFinish).toBe(false);
   });
 
   it('should return decoded Cleaning Preferences for 18 flag', () => {
     let viaLocal = new Dorita980Local('myuser', 'mypassword', '192.168.1.104');
     let preferences = viaLocal.decodeCleaningPreferences(18);
-    expect(preferences.carpetBoost).be.equal('eco');
-    expect(preferences.edgeClean).be.equal(false);
-    expect(preferences.cleaningPasses).be.equal('auto');
-    expect(preferences.alwaysFinish).be.equal(true);
+    expect(preferences.carpetBoost).toBe('eco');
+    expect(preferences.edgeClean).toBe(false);
+    expect(preferences.cleaningPasses).toBe('auto');
+    expect(preferences.alwaysFinish).toBe(true);
   });
 
   it('should return decoded Cleaning Preferences for 112 flag', () => {
     let viaLocal = new Dorita980Local('myuser', 'mypassword', '192.168.1.104');
     let preferences = viaLocal.decodeCleaningPreferences(112);
-    expect(preferences.carpetBoost).be.equal('performance');
-    expect(preferences.edgeClean).be.equal(true);
-    expect(preferences.cleaningPasses).be.equal('auto');
-    expect(preferences.alwaysFinish).be.equal(false);
+    expect(preferences.carpetBoost).toBe('performance');
+    expect(preferences.edgeClean).toBe(true);
+    expect(preferences.cleaningPasses).toBe('auto');
+    expect(preferences.alwaysFinish).toBe(false);
   });
 });
 
@@ -152,7 +154,7 @@ describe('dorita980 local call', () => {
   it('should be rejected if get an invalid json response', () => {
     let viaLocal = new Dorita980Local('myuser', '123456_bad', '192.168.1.104');
 
-    return expect(viaLocal.getTime()).be.rejectedWith('Unexpected token b');
+    return expect(viaLocal.getTime()).rejects.toThrow(SyntaxError);
   });
 
   it('should send getPreferences command with default decoded arg', () => {
@@ -175,7 +177,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'prefs')
     };
 
-    return expect(viaLocal.getPreferences()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getPreferences()).resolves.toEqual(responseOK);
   });
 
   it('should send getPreferences command with default decoded arg and handle not ok response', () => {
@@ -186,7 +188,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'prefs')
     };
 
-    return expect(viaLocal.getPreferences()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getPreferences()).resolves.toEqual(responseOK);
   });
 
   it('should send getPreferences command with false decoded arg', () => {
@@ -203,7 +205,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'prefs')
     };
 
-    return expect(viaLocal.getPreferences(false)).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getPreferences(false)).resolves.toEqual(responseOK);
   });
 
   it('should send setPreferences command', () => {
@@ -221,7 +223,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferences)
     };
 
-    return expect(viaLocal.setPreferences(newPreferences)).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setPreferences(newPreferences)).resolves.toEqual(responseOK);
   });
 
   it('should send setCarpetBoostPerformance command', () => {
@@ -239,7 +241,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setCarpetBoostPerformance()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setCarpetBoostPerformance()).resolves.toEqual(responseOK);
   });
 
   it('should send setCarpetBoostEco command', () => {
@@ -257,7 +259,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setCarpetBoostEco()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setCarpetBoostEco()).resolves.toEqual(responseOK);
   });
 
   it('should send setCarpetBoostAuto command', () => {
@@ -275,7 +277,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setCarpetBoostAuto()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setCarpetBoostAuto()).resolves.toEqual(responseOK);
   });
 
   it('should send setEdgeCleanOn command', () => {
@@ -293,7 +295,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setEdgeCleanOn()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setEdgeCleanOn()).resolves.toEqual(responseOK);
   });
 
   it('should send setEdgeCleanOff command', () => {
@@ -311,7 +313,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setEdgeCleanOff()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setEdgeCleanOff()).resolves.toEqual(responseOK);
   });
 
   it('should send setCleaningPassesAuto command', () => {
@@ -329,7 +331,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setCleaningPassesAuto()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setCleaningPassesAuto()).resolves.toEqual(responseOK);
   });
 
   it('should send setCleaningPassesOne command', () => {
@@ -347,7 +349,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setCleaningPassesOne()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setCleaningPassesOne()).resolves.toEqual(responseOK);
   });
 
   it('should send setCleaningPassesTwo command', () => {
@@ -365,7 +367,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setCleaningPassesTwo()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setCleaningPassesTwo()).resolves.toEqual(responseOK);
   });
 
   it('should send setAlwaysFinishOn command', () => {
@@ -383,7 +385,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setAlwaysFinishOn()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setAlwaysFinishOn()).resolves.toEqual(responseOK);
   });
 
   it('should send setAlwaysFinishOff command', () => {
@@ -401,7 +403,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'prefs', newPreferencesWillbe, 2)
     };
 
-    return expect(viaLocal.setAlwaysFinishOff()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setAlwaysFinishOff()).resolves.toEqual(responseOK);
   });
 
   it('should send getBbrun command', () => {
@@ -412,7 +414,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'bbrun')
     };
 
-    return expect(viaLocal.getBbrun()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getBbrun()).resolves.toEqual(responseOK);
   });
 
   it('should send getSKU command', () => {
@@ -423,7 +425,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'sku')
     };
 
-    return expect(viaLocal.getSKU()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getSKU()).resolves.toEqual(responseOK);
   });
 
   it('should send getMission command with default decoded arg', () => {
@@ -444,7 +446,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'mssn')
     };
 
-    return expect(viaLocal.getMission()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getMission()).resolves.toEqual(responseOK);
   });
 
   it('should send getMission command with decoded arg in false', () => {
@@ -458,7 +460,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'mssn')
     };
 
-    return expect(viaLocal.getMission(false)).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getMission(false)).resolves.toEqual(responseOK);
   });
 
   it('should send getMission command with default decoded arg and handle not ok response', () => {
@@ -469,7 +471,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'mssn')
     };
 
-    return expect(viaLocal.getMission()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getMission()).resolves.toEqual(responseOK);
   });
 
   it('should send getWirelessConfig command', () => {
@@ -480,7 +482,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'wlcfg')
     };
 
-    return expect(viaLocal.getWirelessConfig()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getWirelessConfig()).resolves.toEqual(responseOK);
   });
 
   it('should send getWirelessStatus command', () => {
@@ -491,7 +493,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'wlstat')
     };
 
-    return expect(viaLocal.getWirelessStatus()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getWirelessStatus()).resolves.toEqual(responseOK);
   });
 
   it('should send getCloudConfig command', () => {
@@ -502,7 +504,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'cloudcfg')
     };
 
-    return expect(viaLocal.getCloudConfig()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getCloudConfig()).resolves.toEqual(responseOK);
   });
 
   it('should send getWeek command', () => {
@@ -513,7 +515,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'week')
     };
 
-    return expect(viaLocal.getWeek()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getWeek()).resolves.toEqual(responseOK);
   });
 
   it('should send getLangs command', () => {
@@ -524,7 +526,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'langs')
     };
 
-    return expect(viaLocal.getLangs()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getLangs()).resolves.toEqual(responseOK);
   });
 
   it('should send getSys command', () => {
@@ -535,7 +537,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'sys')
     };
 
-    return expect(viaLocal.getSys()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getSys()).resolves.toEqual(responseOK);
   });
 
   it('should send getWirelessLastStatus command', () => {
@@ -546,7 +548,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('get', 'wllaststat')
     };
 
-    return expect(viaLocal.getWirelessLastStatus()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.getWirelessLastStatus()).resolves.toEqual(responseOK);
   });
 
   it('should send start command', () => {
@@ -557,7 +559,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'cmd', {'op': 'start'})
     };
 
-    return expect(viaLocal.start()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.start()).resolves.toEqual(responseOK);
   });
 
   it('should send pause command', () => {
@@ -568,7 +570,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'cmd', {'op': 'pause'})
     };
 
-    return expect(viaLocal.pause()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.pause()).resolves.toEqual(responseOK);
   });
 
   it('should send stop command', () => {
@@ -579,7 +581,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'cmd', {'op': 'stop'})
     };
 
-    return expect(viaLocal.stop()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.stop()).resolves.toEqual(responseOK);
   });
 
   it('should send resume command', () => {
@@ -590,7 +592,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'cmd', {'op': 'resume'})
     };
 
-    return expect(viaLocal.resume()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.resume()).resolves.toEqual(responseOK);
   });
 
   it('should send dock command', () => {
@@ -601,7 +603,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'cmd', {'op': 'dock'})
     };
 
-    return expect(viaLocal.dock()).eventually.deep.equal(responseOK);
+    return expect(viaLocal.dock()).resolves.toEqual(responseOK);
   });
 
   it('should send setWeek command', () => {
@@ -613,7 +615,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'week', newWeek)
     };
 
-    return expect(viaLocal.setWeek(newWeek)).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setWeek(newWeek)).resolves.toEqual(responseOK);
   });
 
   it('should send setTime command', () => {
@@ -625,7 +627,7 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'time', newTime)
     };
 
-    return expect(viaLocal.setTime(newTime)).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setTime(newTime)).resolves.toEqual(responseOK);
   });
 
   it('should send setPtime command', () => {
@@ -637,6 +639,6 @@ describe('dorita980 local call', () => {
       'body': generateBody('set', 'ptime', newTime)
     };
 
-    return expect(viaLocal.setPtime(newTime)).eventually.deep.equal(responseOK);
+    return expect(viaLocal.setPtime(newTime)).resolves.toEqual(responseOK);
   });
 });

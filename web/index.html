@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Roomba</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="currentColor"/><path d="M6 11h20" stroke="currentColor" stroke-width="2"/></svg>
+      <div>
+        <h1 id="robot-name">Roomba</h1>
+        <p class="subtle" id="robot-meta">Connecting…</p>
+      </div>
+    </div>
+    <span class="pill" id="connection" data-state="idle" role="status" aria-live="polite">Starting</span>
+  </header>
+
+  <div class="banner" id="banner" hidden>
+    <strong id="banner-title"></strong>
+    <span id="banner-text"></span>
+  </div>
+
+  <main class="grid">
+    <section class="card status-card" aria-labelledby="status-title">
+      <h2 id="status-title" class="visually-hidden">Status</h2>
+      <div class="status-head">
+        <div>
+          <p class="phase" id="phase" aria-live="polite">—</p>
+          <p class="subtle" id="phase-detail">&nbsp;</p>
+        </div>
+        <div class="battery" id="battery" aria-label="Battery">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="battery-track" cx="60" cy="60" r="52"/>
+            <circle class="battery-fill" id="battery-ring" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="battery-label"><span id="battery-pct">–</span><small>battery</small></div>
+        </div>
+      </div>
+
+      <dl class="stats">
+        <div><dt>Mission time</dt><dd id="stat-time">–</dd></div>
+        <div><dt>Area</dt><dd id="stat-area">–</dd></div>
+        <div><dt>Bin</dt><dd id="stat-bin">–</dd></div>
+        <div><dt>Missions</dt><dd id="stat-missions">–</dd></div>
+      </dl>
+
+      <div class="controls">
+        <button class="btn primary" id="primary-action" data-action="clean" type="button">
+          <span class="btn-icon" aria-hidden="true">▶</span><span class="btn-text">Clean</span>
+        </button>
+        <div class="control-row">
+          <button class="btn" data-action="pause" type="button"><span class="btn-icon" aria-hidden="true">❚❚</span>Pause</button>
+          <button class="btn" data-action="resume" type="button"><span class="btn-icon" aria-hidden="true">▶</span>Resume</button>
+          <button class="btn" data-action="stop" type="button"><span class="btn-icon" aria-hidden="true">■</span>Stop</button>
+          <button class="btn" data-action="dock" type="button"><span class="btn-icon" aria-hidden="true">⌂</span>Dock</button>
+          <button class="btn" data-action="find" type="button"><span class="btn-icon" aria-hidden="true">♪</span>Find</button>
+          <button class="btn" data-action="evac" type="button"><span class="btn-icon" aria-hidden="true">⇪</span>Empty bin</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card map-card" aria-labelledby="map-title">
+      <div class="card-head">
+        <h2 id="map-title">Live map</h2>
+        <button class="btn ghost small" id="map-clear" type="button">Clear</button>
+      </div>
+      <div class="map-wrap">
+        <canvas id="map" aria-label="Path of the robot during the current mission" role="img"></canvas>
+        <p class="map-empty subtle" id="map-empty">The cleaning path appears here once the robot starts moving.</p>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="prefs-title">
+      <div class="card-head">
+        <h2 id="prefs-title">Cleaning preferences</h2>
+      </div>
+      <form class="prefs" id="prefs">
+        <fieldset class="segmented" data-pref="carpetBoost">
+          <legend>Carpet boost</legend>
+          <label><input type="radio" name="carpetBoost" value="auto"><span>Auto</span></label>
+          <label><input type="radio" name="carpetBoost" value="performance"><span>Performance</span></label>
+          <label><input type="radio" name="carpetBoost" value="eco"><span>Eco</span></label>
+        </fieldset>
+        <fieldset class="segmented" data-pref="cleaningPasses">
+          <legend>Cleaning passes</legend>
+          <label><input type="radio" name="cleaningPasses" value="auto"><span>Auto</span></label>
+          <label><input type="radio" name="cleaningPasses" value="one"><span>One</span></label>
+          <label><input type="radio" name="cleaningPasses" value="two"><span>Two</span></label>
+        </fieldset>
+        <fieldset class="segmented" data-pref="edgeClean">
+          <legend>Edge clean</legend>
+          <label><input type="radio" name="edgeClean" value="on"><span>On</span></label>
+          <label><input type="radio" name="edgeClean" value="off"><span>Off</span></label>
+        </fieldset>
+        <fieldset class="segmented" data-pref="alwaysFinish">
+          <legend>Finish when bin is full</legend>
+          <label><input type="radio" name="alwaysFinish" value="on"><span>On</span></label>
+          <label><input type="radio" name="alwaysFinish" value="off"><span>Off</span></label>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="schedule-title">
+      <div class="card-head">
+        <h2 id="schedule-title">Schedule</h2>
+        <button class="btn small" id="schedule-save" type="button" disabled>Save</button>
+      </div>
+      <form id="schedule" class="schedule"></form>
+      <p class="subtle" id="schedule-empty" hidden>This robot doesn't report a weekly schedule.</p>
+    </section>
+
+    <section class="card" aria-labelledby="info-title">
+      <div class="card-head">
+        <h2 id="info-title">Robot</h2>
+        <button class="btn ghost small" id="refresh" type="button">Refresh</button>
+      </div>
+      <dl class="info" id="info"></dl>
+    </section>
+  </main>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

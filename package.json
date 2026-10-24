@@ -1,41 +1,46 @@
 {
   "name": "dorita980",
   "version": "4.0.0",
-  "description": "Unofficial iRobot Roomba 980 and wifi other enabled series library sdk",
+  "description": "Unofficial iRobot Roomba library, REST API and web UI",
   "main": "./index.js",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "pretest": "npm install",
-    "check:style": "eslint .",
-    "test": "_mocha -- $npm_package_config_mocha && npm run check:style",
-    "test:coverage:run": "istanbul cover _mocha -- $npm_package_config_mocha",
-    "test:coverage:check": "istanbul check-coverage --functions 80",
-    "test:coverage": "npm run test:coverage:run && npm run test:coverage:check",
-    "getpassword": "node ./bin/getpassword.js",
-    "get-password-cloud": "node ./bin/getPasswordCloud.js"
-  },
+  "files": [
+    "index.js",
+    "lib",
+    "bin",
+    "server",
+    "web"
+  ],
   "bin": {
     "get-roomba-password": "./bin/getpassword.js",
-    "get-roomba-password-cloud": "./bin/getPasswordCloud.js"
+    "get-roomba-password-cloud": "./bin/getPasswordCloud.js",
+    "rest980": "./bin/rest980.js"
+  },
+  "scripts": {
+    "start": "bun ./bin/rest980.js",
+    "dev": "bun --watch ./bin/rest980.js",
+    "mock-robot": "bun ./scripts/mock-robot.js",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "lint": "eslint .",
+    "check": "bun run lint && bun test",
+    "getpassword": "bun ./bin/getpassword.js",
+    "get-password-cloud": "bun ./bin/getPasswordCloud.js"
+  },
+  "engines": {
+    "bun": ">=1.2.0",
+    "node": ">=18.2.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/koalazak/dorita980.git"
   },
+  "dependencies": {
+    "mqtt": "^2.15.0"
+  },
   "devDependencies": {
-    "chai": "^3.5.0",
-    "chai-as-promised": "^6.0.0",
-    "mocha": "^3.1.2",
-    "istanbul": "^0.4.0",
-    "semistandard": "^9.1.0",
-    "eslint": "^4.18.2",
-    "eslint-config-standard": "^6.2.0",
-    "eslint-config-semistandard": "^7.0.0",
-    "eslint-plugin-promise": "^3.0.0",
-    "eslint-plugin-standard": "^2.0.1",
-    "proxyquire": "^1.7.10"
+    "eslint": "^9",
+    "mqtt-packet": "^5",
+    "neostandard": "^0.14"
   },
   "keywords": [
     "unofficial",
@@ -56,17 +61,16 @@
     "alexa",
     "vacuum",
     "cleaner",
-    "IoT"
+    "IoT",
+    "rest",
+    "api",
+    "web",
+    "bun"
   ],
   "author": "koalazak <zak.tux@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/koalazak/dorita980/issues"
   },
-  "homepage": "https://github.com/koalazak/dorita980#readme",
-  "dependencies": {
-    "mqtt": "^2.15.0",
-    "request": "^2.74.0",
-    "request-promise": "^4.1.1"
-  }
+  "homepage": "https://github.com/koalazak/dorita980#readme"
 }
