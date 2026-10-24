@@ -61,7 +61,7 @@
     "get-password-cloud": "bun bin/getPasswordCloud.ts"
   },
   "dependencies": {
-    "mqtt": "^2.15.0"
+    "mqtt": "^5.16.1"
   },
   "engines": {
     "bun": ">=1.2.21",
