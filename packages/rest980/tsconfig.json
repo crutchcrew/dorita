@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "dorita980": ["../dorita980/index.ts"],
+      "dorita980/*": ["../dorita980/*"]
+    }
+  },
+  "include": ["bin", "server", "test"]
+}

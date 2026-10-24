@@ -1,8 +1,6 @@
 import { EventEmitter } from 'node:events';
-import dorita980 from '../index.ts';
-import type { Callback } from '../lib/discovery.ts';
-import type { LocalV2, LocalV2Options } from '../lib/v2/local.ts';
-import type { MissionUpdate, RobotState } from '../lib/types.ts';
+import dorita980 from 'dorita980';
+import type { Callback, LocalV2, LocalV2Options, MissionUpdate, RobotState } from 'dorita980';
 import type { Config } from './config.ts';
 
 const V1_ACTIONS = ['start', 'pause', 'stop', 'resume', 'dock'];

@@ -12,9 +12,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import mqttPacket from 'mqtt-packet';
 import type { Packet } from 'mqtt-packet';
-import type { CleanMissionStatus, Pose, RobotState } from '../lib/types.ts';
+import type { CleanMissionStatus, Pose, RobotState } from 'dorita980';
 
-const fixtures = path.join(import.meta.dirname, '..', 'test', 'fixtures');
+const fixtures = path.join(import.meta.dirname, 'fixtures');
 
 interface MockState extends RobotState {
   batPct: number;
