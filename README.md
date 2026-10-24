@@ -1,12 +1,11 @@
 # dorita980
 [![npm version](https://badge.fury.io/js/dorita980.svg)](http://badge.fury.io/js/dorita980)
 
-Unofficial iRobot Roomba (Combo 10 Max, j7, i7/i7+, 980, 960, e5, 690, 675, etc) node.js library (SDK).
-
+Unofficial iRobot Roomba (Combo 10 Max, j7, i7/i7+, 980, 960, e5, 690, 675, etc) JavaScript library (SDK), REST API and web UI. Runs on [Bun](https://bun.sh).
 
 With this library you can send commands to your wifi enabled Roomba through the iRobot cloud API or directly from your LAN and integrate your robot with your own Home Automation or IoT project.
 
-See [rest980](https://github.com/koalazak/rest980) if you need a HTTP REST API interface.
+It also ships the [REST API server (formerly rest980)](#rest-api-and-web-ui) with a web UI to control your robot from a browser.
 
 # Advice
 
@@ -27,7 +26,7 @@ If you have firmware version 1.6.x [click here](https://github.com/koalazak/dori
 - Firmware 1.6.x compatible.
 - Firmware 2.x.x compatible (latest serie 900 uses firmware v2, not v3).
 - Firmware 3.2.x compatible (latest serie 800 uses firmware v3).
-- See [rest980](https://github.com/koalazak/rest980) if you need a HTTP REST API interface to use dorita980 through it.
+- [REST API and web UI](#rest-api-and-web-ui) (formerly the separate rest980 project).
 
 ## Supported Robots and Protocols
 
@@ -40,16 +39,20 @@ dorita980 targets the local MQTT/TLS protocol used by older Wi‑Fi Roombas. Kno
 
 V4 protocol robots are **work in progress** and not yet supported here. These include newer Matter‑first models such as Combo Max 705 and other recent devices. For now, use dorita980 only with the v1/v2/v3 firmware families listed above.
 
-## Node.js / TLS compatibility
+## Runtime and TLS compatibility
 
-Newer Node.js/OpenSSL versions disable legacy TLS renegotiation by default, which can break local connections to some robots. dorita980 now enables legacy renegotiation when available. You can override behavior with:
+dorita980 is developed and tested with [Bun](https://bun.sh) (>= 1.2.21). The library and the REST server also still run on Node.js (>= 18).
+
+Bun uses BoringSSL, which does not support the `AES128-SHA256` cipher that dorita980 asks for by default (and that some older robots, e.g. 900 series on firmware 2.x, may require). On Bun, unsupported ciphers are dropped and the runtime's default cipher list is used instead. If your robot fails the TLS handshake under Bun, run the same code with Node.js instead, e.g. `node ./bin/rest980.js`. The REST server shows a hint in the web UI and logs when this looks like the cause.
+
+Newer OpenSSL versions disable legacy TLS renegotiation by default, which can break local connections to some robots. dorita980 enables legacy renegotiation when available. You can override behavior with:
 
 - `ROBOT_TLS_LEGACY=0` to disable legacy renegotiation
 - `ROBOT_CIPHERS` to provide a custom cipher list for MQTT/TLS
 
 [![iRobot Roomba 980 cleaning map using dorita980 lib](https://img.youtube.com/vi/XILvHFEX7TM/0.jpg)](https://www.youtube.com/watch?v=XILvHFEX7TM)
 
-Video: Realtime cleaning map using dorita980 lib in [rest980](https://github.com/koalazak/rest980).
+Video: Realtime cleaning map using dorita980 lib in rest980.
 
 ## Supported Features by Firmware Version (v1/v2/v3)
 
@@ -80,10 +83,10 @@ Note: some new firmwares are not reporting robot position ('pose' property) to l
 
 # Install
 
-First you need node.js installed and then:
+First you need [Bun](https://bun.sh) installed and then:
 
 ```bash
-$ npm install dorita980 --save
+$ bun add dorita980
 ```
 
 # Quick start via Local request on your LAN
@@ -106,11 +109,11 @@ function init () {
 
 ```
 
-Then install `dorita980` using `npm` and run your program:
+Then install `dorita980` and run your program:
 
 ```bash
-$ npm install dorita980 --save
-$ node myapp.js
+$ bun add dorita980
+$ bun myapp.js
 ```
 
 # Examples
@@ -158,22 +161,21 @@ You need your iRobot account credentials (username and password).
 
 ** Option 1 **
 
-Install `dorita980` globally and then run the `get-roomba-password-cloud` command:
+Run the `get-roomba-password-cloud` command with `bunx`:
 
 ```bash
-$ npm install -g dorita980
-$ get-roomba-password-cloud <iRobot Username> <iRobot Password> [Optional API-Key]
+$ bunx --package dorita980 get-roomba-password-cloud <iRobot Username> <iRobot Password> [Optional API-Key]
 ```
 
 ** Option 2 **
 
-Clone the repo and then run the npm script:
+Clone the repo and then run the script:
 
 ```bash
 $ git clone https://github.com/koalazak/dorita980.git
 $ cd dorita980
-$ npm install
-$ npm run get-password-cloud <iRobot Username> <iRobot Password> [Optional API-Key]
+$ bun install
+$ bun run get-password-cloud <iRobot Username> <iRobot Password> [Optional API-Key]
 ```
 
 You can override discovery/auth endpoints if needed:
@@ -189,13 +191,12 @@ You can override discovery/auth endpoints if needed:
 Docker run command:
 
 ```
-docker run -it node sh -c "npm install -g dorita980 && get-roomba-password-cloud <iRobot Username> <iRobot Password> [Optional API-Key]"
+docker run -it oven/bun bunx --package dorita980 get-roomba-password-cloud <iRobot Username> <iRobot Password> [Optional API-Key]
 ```
 ** Example Output **
 
 ```
-$ npm install -g dorita980
-$ get-roomba-password-cloud myemail@example.com myeasypassword
+$ bunx --package dorita980 get-roomba-password-cloud myemail@example.com myeasypassword
 Found 1 robot(s)!
 Robot "Dorita" (sku: R98---- SoftwareVer: v2.4.16-126):
 BLID=> xxxxxxxxxxxxx
@@ -213,22 +214,21 @@ You need to know your robot IP address (look in your router or scan your LAN net
 
 ** Local Option 1 **
 
-Install `dorita980` globally and then run the `get-roomba-password` command:
+Run the `get-roomba-password` command with `bunx`:
 
 ```bash
-$ npm install -g dorita980
-$ get-roomba-password <robotIP>
+$ bunx --package dorita980 get-roomba-password <robotIP>
 ```
 
 ** Local Option 2 **
 
-Clone the repo and then run the npm script:
+Clone the repo and then run the script:
 
 ```bash
 $ git clone https://github.com/koalazak/dorita980.git
 $ cd dorita980
-$ npm install
-$ npm run getpassword <robotIP>
+$ bun install
+$ bun run getpassword <robotIP>
 ```
 
 ** Local Option 3 **
@@ -236,14 +236,13 @@ $ npm run getpassword <robotIP>
 Docker run command:
 
 ```
-docker run -it node sh -c "npm install -g dorita980 && get-roomba-password <robotIP>"
+docker run -it --network host oven/bun bunx --package dorita980 get-roomba-password <robotIP>
 ```
 
 ** Example Output in local method **
 
 ```
-$ npm install -g dorita980
-$ get-roomba-password 192.168.1.103
+$ bunx --package dorita980 get-roomba-password 192.168.1.103
 
 Make sure your robot is on the Home Base and powered on. Then press and hold the HOME button on your robot until it plays a series of tones (about 2 seconds). Release the button and your robot will flash WIFI light.
 Then press any key...
@@ -272,7 +271,7 @@ Most common issues getting your password are related with:
 - Other applications are using your robot: Close all your applications or scripts using the robot. Same as frist bullet.
 - Network connectivity issues: Make sure your computer can reach your robot: `nc -zv <robot_ip> 8883` if this command fails check your network.
 - Slow networks using local method: On some slow networks you need to run the `get-roomba-password` a couple of times until you get it. This is because UDP packages may be lost.
-- node.js version: Mostly tested on v10 but also works on v12, v14 and v16. Try using v10.
+- Runtime: if the TLS connection to the robot fails under Bun, try Node.js (`node ./bin/getpassword.js <robotIP>`). See [Runtime and TLS compatibility](#runtime-and-tls-compatibility).
 - Wrong button: It is really common people touching CLEAN button on 980 robots instead of HOME button when prompted. Make sure you are pressing the correct button. Some model (like 675) do not have HOME button and you need to press DOCK+SPOT.
 - Make sure your robot is docked on the Home Base and powered on (short press Clean button once to turn it on. But do not start a cleaning session!)
 - Robot not configured: Did you configure the Robot for first time with the mobile app? If not, you need to do that first. This process set the actual password.
@@ -326,6 +325,153 @@ Will print:
   nc: 0,
   proto: 'mqtt' }
 ```
+
+# REST API and web UI
+
+dorita980 includes an HTTP server (formerly the separate [rest980](https://github.com/koalazak/rest980) project) that maps the library methods to a REST API and serves a web UI to control your robot from any browser on your network.
+
+![Web UI](docs/web-ui.png)
+
+The web UI shows the robot status, battery and bin, lets you start, pause, resume, stop, dock, locate and empty the bin, change cleaning preferences and the weekly schedule, and draws a live map of the cleaning path on robots that report their position. With firmware 2.x and `keepAlive` on, updates are pushed live; with firmware 1.x the page polls the robot.
+
+## Start the server
+
+```bash
+$ git clone https://github.com/koalazak/dorita980.git
+$ cd dorita980
+$ bun install
+$ cp .env.example .env   # then fill in BLID, PASSWORD and ROBOT_IP
+$ bun start
+rest980 listening on http://localhost:3000
+robot: connected
+```
+
+Open `http://<server-ip>:3000` in your browser. If the robot needs a cipher Bun lacks, run `node ./bin/rest980.js` instead (see [Runtime and TLS compatibility](#runtime-and-tls-compatibility)).
+
+Remember the robot accepts only one local connection at a time: while the server keeps the connection open (`KEEP_ALIVE=yes`), the official app falls back to the cloud.
+
+## Configuration
+
+Set environment variables (Bun loads `.env` automatically) or put the same keys in `config/default.json` (or the file named by `CONFIG_FILE`). Environment variables win.
+
+|Config file key|Environment|Description|
+|:---|:---|:---|
+|port|PORT|*(default: 3000)* The HTTP port to listen on.|
+|blid|BLID|*(required)* The robot blid. See [How to get your username/blid and password](#how-to-get-your-usernameblid-and-password).|
+|password|PASSWORD|*(required)* The robot password.|
+|robotIP|ROBOT_IP|*(optional)* The robot IP. Without it the robot is discovered with a UDP broadcast on startup.|
+|robotPort|ROBOT_PORT|*(optional, default: 8883)* The robot MQTT/TLS port (firmware 2.x).|
+|firmwareVersion|FIRMWARE_VERSION|*(optional, default: 2)* `1` for firmware 1.6.x, `2` for any firmware >= 2 (also 3.x).|
+|enableLocal|ENABLE_LOCAL|*(optional)* Set to `no` to disable the local API. Default `yes`.|
+|enableCloud|ENABLE_CLOUD|*(optional)* Set to `no` to disable the cloud API (firmware 1.x only). Default `yes`.|
+|keepAlive|KEEP_ALIVE|*(optional)* Set to `no` to connect and disconnect on each request (slower, but leaves the connection free for the official app; no live updates).|
+|basicAuthUser|BASIC_AUTH_USER|*(optional)* Enables HTTP basic auth for the API and web UI. Both user and pass must be set.|
+|basicAuthPass|BASIC_AUTH_PASS|*(optional)* See above.|
+|sslKeyFile|SSL_KEY_FILE|*(optional)* Path to a key file to enable HTTPS. Both key and cert must be set.|
+|sslCertFile|SSL_CERT_FILE|*(optional)* Path to a cert file to enable HTTPS.|
+
+The `ROBOT_TLS_LEGACY`, `ROBOT_CIPHERS` and cloud auth override variables described above are passed through to the library.
+
+Changes from the standalone rest980: `firmwareVersion` now defaults to `2` (like the library), `GET /` serves the web UI to browsers (API clients still get the JSON hello; use `/ping` for health checks), and the experimental `/map` page was replaced by the live map in the web UI.
+
+## Docker
+
+```bash
+$ docker build . -t dorita980
+$ docker run -p 3000:3000 -e BLID=myuser -e PASSWORD=mypass -e ROBOT_IP=myrobotIP dorita980
+```
+
+## API documentation
+
+Errors use HTTP status codes (`400` invalid arguments, `404` unknown endpoint, `501` not supported by your firmware, `503` robot not connected or API disabled, `504` robot timed out, `500` robot errors) and this body:
+
+```
+{"message":"human message","error":{}}
+```
+
+### Info and status
+
+- `GET /ping`
+- `GET /api/info/version` (dorita980 version, Node.js and Bun versions, firmwareVersion)
+- `GET /api/info/protocol` (protocol/transport, keepAlive, robot IP)
+- `GET /api/info/capabilities` (local/cloud/live state support and available actions)
+- `GET /api/status` connection status, last connection error, latest robot state (firmware 2.x) and the path of the current mission
+- `GET /api/events` [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) stream with `status`, `state` (full robot state, throttled) and `mission` (`cleanMissionStatus`, `pose` and `bin`) events. Requires firmware 2.x and `keepAlive`.
+- `DELETE /api/path` clears the tracked mission path
+
+### Local actions
+
+Actions are under `/api/local/action/[action]` and accept `GET` (as in rest980) or `POST`:
+
+- start
+- stop
+- pause
+- dock
+- resume
+- clean (firmware 2.x)
+- find (firmware 2.x)
+- evac (firmware 2.x, empties the bin on Clean Base models)
+
+```http
+POST http://192.168.1.110:3000/api/local/action/start
+```
+Success Response:
+```
+{"ok":null}
+```
+
+#### Clean specific rooms
+
+Some models (e.g. s9, i7) support cleaning specific rooms of a Smart Map. Start a room clean from the iRobot app, then read `lastCommand` from `GET /api/local/info/state` to find the `pmap_id`, `user_pmapv_id` and region ids. See [`cleanRoom`](#cleanRoom).
+
+```sh
+curl -X POST http://192.168.1.110:3000/api/local/action/cleanRoom -H 'Content-Type: application/json' -d '{"ordered": 0, "pmap_id": "123456", "regions": [{"region_id":"5", "region_name":"Hallway","region_type":"hallway"}], "user_pmapv_id": "987654"}'
+```
+
+### Local info
+
+All info endpoints are under `/api/local/info/[record]` using `GET`:
+
+- mission
+- wireless
+- lastwireless
+- sys
+- sku
+- state (only in firmware 2)
+
+### Local configuration
+
+Configuration endpoints are under `/api/local/config/[configName]`. Use `GET` to read the current configuration and `POST` with a JSON (or form) body to set it.
+
+- ptime (only POST, firmware 1)
+- bbrun (only GET)
+- cloud (only GET)
+- langs (only GET. Use `preferences` to set lang)
+- week
+- time (GET and POST in firmware 1, only GET in firmware 2)
+- preferences
+- carpetBoost/auto, carpetBoost/performance, carpetBoost/eco (only POST)
+- edgeClean/on, edgeClean/off (only POST)
+- cleaningPasses/auto, cleaningPasses/one, cleaningPasses/two (only POST)
+- alwaysFinish/on, alwaysFinish/off (only POST)
+
+See the [Local API](#local-api) below for the responses and body params of each method.
+
+```http
+POST http://192.168.1.110:3000/api/local/config/week
+Content-Type: application/json
+
+{"cycle":["none","start","start","start","start","start","none"],"h":[10,10,10,10,10,10,10],"m":[30,30,30,30,30,30,30]}
+```
+
+### Cloud (only for firmware 1.6.x)
+
+Use `GET` on:
+
+- /api/cloud/info/status
+- /api/cloud/info/history
+- /api/cloud/info/missionHistory
+- /api/cloud/action/clean, quick, spot, dock, start, stop, pause, resume, wake, reset, find, wipe, sleep, off, fbeep
 
 # Local API
 
@@ -933,20 +1079,21 @@ myRobotViaLocal.on('state', function (data) {
 ```
 Will print the Full robot state!
 
-# Note for node.js v0.10 users
-
-dorita980 is compatible with node.js > 4.0 But you can use the [getpassword](https://github.com/koalazak/dorita980#how-to-get-your-usernameblid-and-password) feature in node.js < 4.0 using `--harmony` flag like that:
-
-```bash
-$ node --harmony ./bin/getpassword.js "192.168.1.104"
-```
-
 # Custom tls cipher
 
-You can set `ROBOT_CIPHERS` environment variable to overwrite the cipher suit used in tls connection to the robot. Default is `AES128-SHA256`
+You can set `ROBOT_CIPHERS` environment variable to overwrite the cipher suit used in tls connection to the robot. Default is `AES128-SHA256`. Ciphers the runtime doesn't support are ignored (see [Runtime and TLS compatibility](#runtime-and-tls-compatibility)).
 
 ```bash
-$ ROBOT_CIPHERS=AES128-SHA node myscript.js
+$ ROBOT_CIPHERS=AES128-SHA bun myscript.js
+```
+
+# Development
+
+```bash
+$ bun install
+$ bun test           # unit and end-to-end tests (uses a mock robot)
+$ bun run lint
+$ bun run mock-robot # fake firmware 2.x robot on 127.0.0.1:8883 to try the web UI
 ```
 # Cloud API
 

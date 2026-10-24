@@ -1,11 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 'use strict';
 
-const request = require('request');
-
 if (!process.argv[2] || !process.argv[3]) {
-  console.log('Usage: npm run get-password-cloud <iRobot username> <iRobot password> [Gigya API Key]');
+  console.log('Usage: bun run get-password-cloud <iRobot username> <iRobot password> [Gigya API Key]');
   process.exit();
 }
 
@@ -24,19 +22,15 @@ getEndpoints(function (error, endpoints) {
   }
 
   const gigyaLoginOptions = {
-    'method': 'POST',
-    'uri': endpoints.gigyaBase + '/accounts.login',
-    'json': true,
-    'form': {
-      'apiKey': endpoints.apiKey,
-      'targetenv': 'mobile',
-      'loginID': username,
-      'password': password,
-      'format': 'json',
-      'targetEnv': 'mobile'
-    },
-    'headers': {
-      'Connection': 'close'
+    method: 'POST',
+    uri: endpoints.gigyaBase + '/accounts.login',
+    form: {
+      apiKey: endpoints.apiKey,
+      targetenv: 'mobile',
+      loginID: username,
+      password: password,
+      format: 'json',
+      targetEnv: 'mobile'
     }
   };
 
@@ -44,6 +38,29 @@ getEndpoints(function (error, endpoints) {
     loginGigyaResponseHandler(err, response, body, endpoints);
   });
 });
+
+// Small callback-style wrapper around fetch() that parses JSON responses.
+function request (options, cb) {
+  const init = { method: options.method || 'GET', headers: { Accept: 'application/json' } };
+  if (options.form) {
+    init.body = new URLSearchParams(options.form);
+  } else if (options.body) {
+    init.headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(options.body);
+  }
+
+  fetch(options.uri, init).then(function (res) {
+    return res.text().then(function (text) {
+      let body = text;
+      try { body = JSON.parse(text); } catch (e) {}
+      return { statusCode: res.status, body: body };
+    });
+  }).then(function (response) {
+    cb(null, response, response.body);
+  }, function (error) {
+    cb(error);
+  });
+}
 
 function loginGigyaResponseHandler (error, response, body, endpoints) {
   if (error) {
@@ -72,10 +89,9 @@ function loginGigyaResponseHandler (error, response, body, endpoints) {
     }
     if (body && body.statusCode && body.statusCode === 200 && body.errorCode === 0 && body.UID && body.UIDSignature && body.signatureTimestamp && body.sessionInfo && body.sessionInfo.sessionToken) {
       const iRobotLoginOptions = {
-        'method': 'POST',
-        'uri': endpoints.httpBase + '/v2/login',
-        'json': true,
-        'body': {
+        method: 'POST',
+        uri: endpoints.httpBase + '/v2/login',
+        body: {
           'app_id': 'ANDROID-C7FB240E-DF34-42D7-AE4E-A8C17079A294',
           'assume_robot_ownership': 0,
           'gigya': {
@@ -83,9 +99,6 @@ function loginGigyaResponseHandler (error, response, body, endpoints) {
             'timestamp': body.signatureTimestamp,
             'uid': body.UID
           }
-        },
-        'headers': {
-          'Connection': 'close'
         }
       };
       request(iRobotLoginOptions, loginIrobotResponseHandler);
@@ -134,7 +147,7 @@ function getEndpoints (cb) {
 }
 
 function discoverEndpoints (cb) {
-  request({ method: 'GET', uri: discoveryUrl, json: true }, function (error, response, body) {
+  request({ method: 'GET', uri: discoveryUrl }, function (error, response, body) {
     if (error) return cb(error);
     if (!response || response.statusCode >= 400) return cb(body || response);
 
