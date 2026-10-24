@@ -664,20 +664,6 @@ bun run mock-robot
 BLID=mockblid PASSWORD=mockpass ROBOT_IP=127.0.0.1 bun start
 ```
 
-## Support the project
-
-If dorita980 is useful to you, please consider a donation to its original author. It helps buy new robots and keep up with new firmwares.
-
-| Method          | Address                                                              |
-| --------------- | -------------------------------------------------------------------- |
-| Bitcoin         | `bc1qepwdmdk25yxa39g9kerzw9m5y7nxztwkmcu3aa`                         |
-| Ethereum        | `0x7EcE75b4fc6A2109850a106b58Dcf750C6B0CdE3`                         |
-| Open Collective | [opencollective.com/dorita980](https://opencollective.com/dorita980) |
-| PayPal          | zak.tux@gmail.com                                                    |
-| Other           | Just ask                                                             |
-
-Thank you for your support!
-
 ## Author
 
 Created by [Facu ZAK](https://github.com/koalazak). Released under the [MIT License](LICENSE).
