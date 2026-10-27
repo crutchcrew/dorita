@@ -1,0 +1,51 @@
+{
+  "name": "rest980",
+  "version": "4.0.0",
+  "description": "REST API and web UI for iRobot Roomba robots, built on dorita980",
+  "keywords": [
+    "Roomba",
+    "api",
+    "dorita980",
+    "iRobot",
+    "rest",
+    "robot",
+    "vacuum",
+    "web"
+  ],
+  "homepage": "https://github.com/koalazak/dorita980#readme",
+  "bugs": {
+    "url": "https://github.com/koalazak/dorita980/issues"
+  },
+  "license": "MIT",
+  "author": "koalazak <zak.tux@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koalazak/dorita980.git",
+    "directory": "packages/rest980"
+  },
+  "bin": {
+    "rest980": "./dist/bin/rest980.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "scripts": {
+    "start": "bun bin/rest980.ts",
+    "dev": "bun --watch bin/rest980.ts",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && bun build web/app.ts --outdir dist/web --target browser && cp web/index.html web/style.css web/favicon.svg dist/web/",
+    "typecheck": "tsc -p . && tsc -p web",
+    "test": "bun test",
+    "prepublishOnly": "bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "dorita980": "workspace:^"
+  },
+  "devDependencies": {
+    "@dorita980/mock-robot": "workspace:*"
+  },
+  "engines": {
+    "bun": ">=1.2.21",
+    "node": ">=20.19.0"
+  }
+}

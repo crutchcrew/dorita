@@ -1,8 +1,6 @@
 import { EventEmitter } from 'node:events';
-import dorita980 from '../index.ts';
-import type { Callback } from '../lib/discovery.ts';
-import type { LocalV2, LocalV2Options } from '../lib/v2/local.ts';
-import type { MissionUpdate, RobotState } from '../lib/types.ts';
+import dorita980 from 'dorita980';
+import type { Callback, LocalV2, LocalV2Options, MissionUpdate, RobotState } from 'dorita980';
 import type { Config } from './config.ts';
 
 const V1_ACTIONS = ['start', 'pause', 'stop', 'resume', 'dock'];
@@ -91,7 +89,7 @@ export function describeError(error: unknown): ConnectionError {
   // BoringSSL (Bun) lacks the AES128-SHA256 cipher that some robots require.
   if (process.versions.bun && /handshake|cipher|ssl|tls/i.test(message)) {
     result.hint =
-      'Your robot may need the AES128-SHA256 TLS cipher, which Bun does not support. Try running the server with Node.js 22.18+: node ./bin/rest980.ts';
+      'Your robot may need the AES128-SHA256 TLS cipher, which Bun does not support. Try running the server with Node.js 22.18+: bun run build, then node packages/rest980/dist/bin/rest980.js';
   }
   return result;
 }
