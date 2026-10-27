@@ -89,7 +89,7 @@ export function describeError(error: unknown): ConnectionError {
   // BoringSSL (Bun) lacks the AES128-SHA256 cipher that some robots require.
   if (process.versions.bun && /handshake|cipher|ssl|tls/i.test(message)) {
     result.hint =
-      'Your robot may need the AES128-SHA256 TLS cipher, which Bun does not support. Try running the server with Node.js 22.18+: node ./bin/rest980.ts';
+      'Your robot may need the AES128-SHA256 TLS cipher, which Bun does not support. Try running the server with Node.js 22.18+: bun run build, then node packages/rest980/dist/bin/rest980.js';
   }
   return result;
 }
