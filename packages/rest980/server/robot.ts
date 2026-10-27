@@ -204,11 +204,11 @@ export class Robot extends EventEmitter {
     });
     client.on('reconnect', () => this.setConnection('connecting'));
     client.on('offline', () => this.setConnection('offline'));
-    client.on('state' as 'message', (state: RobotState) => {
+    client.on('state', (state) => {
       this.state = state;
       this.emit('state', state);
     });
-    client.on('mission' as 'message', (mission: MissionUpdate) => {
+    client.on('mission', (mission) => {
       this.trackPath(mission);
       this.emit('mission', mission);
     });

@@ -1,8 +1,15 @@
+import type { EventEmitter } from 'node:events';
 import mqtt from 'mqtt';
-import type { MqttClient } from 'mqtt';
+import type { IClientOptions, MqttClient } from 'mqtt';
 import { robotTlsOptions } from '../tls.ts';
 import type { RobotTlsCustomOptions } from '../tls.ts';
-import type { CommandResult, MissionUpdate, RobotState, WeekSchedule } from '../types.ts';
+import type {
+  CommandResult,
+  MissionUpdate,
+  RobotState,
+  RobotUpdate,
+  WeekSchedule,
+} from '../types.ts';
 
 export interface LocalV2Options extends RobotTlsCustomOptions {
   // How often the 'mission' event is emitted, in ms. Default 800.
@@ -53,9 +60,23 @@ export interface LocalV2Methods {
   setAlwaysFinishOff: () => Promise<CommandResult>;
 }
 
+// The events the client emits on top of the MQTT ones.
+export interface LocalV2Events {
+  update: (message: RobotUpdate) => void;
+  state: (state: RobotState) => void;
+  mission: (mission: MissionUpdate) => void;
+}
+
+export interface LocalV2EventMethods {
+  on<E extends keyof LocalV2Events>(event: E, listener: LocalV2Events[E]): LocalV2;
+  once<E extends keyof LocalV2Events>(event: E, listener: LocalV2Events[E]): LocalV2;
+  off<E extends keyof LocalV2Events>(event: E, listener: LocalV2Events[E]): LocalV2;
+  removeListener<E extends keyof LocalV2Events>(event: E, listener: LocalV2Events[E]): LocalV2;
+}
+
 // The MQTT client with the robot methods mixed in. Besides the MQTT events it
 // emits 'update' (raw message), 'state' (full state) and 'mission'.
-export type LocalV2 = MqttClient & LocalV2Methods;
+export type LocalV2 = MqttClient & LocalV2Methods & LocalV2EventMethods;
 
 const POSSIBLE_CAPABILITIES = [
   'pose',
@@ -101,7 +122,13 @@ export default function localV2(
     username: user,
     password,
     ...robotTlsOptions(customOptions),
-  } as mqtt.IClientOptions);
+  } as IClientOptions);
+
+  // MqttClient only types its own events, so emit ours through the base class.
+  const emit = <E extends keyof LocalV2Events>(
+    event: E,
+    ...args: Parameters<LocalV2Events[E]>
+  ): boolean => (client as unknown as EventEmitter).emit(event, ...args);
 
   client.on('error', (e: Error) => {
     if (customOptions.onError) customOptions.onError(e);
@@ -111,7 +138,7 @@ export default function localV2(
   client.on('connect', () => {
     missionInterval = setInterval(() => {
       if (robotState.cleanMissionStatus) {
-        client.emit('mission', filterProps(['cleanMissionStatus', 'pose', 'bin']) as MissionUpdate);
+        emit('mission', filterProps(['cleanMissionStatus', 'pose', 'bin']) as MissionUpdate);
       }
     }, interval);
   });
@@ -120,13 +147,13 @@ export default function localV2(
     clearInterval(missionInterval);
   });
 
-  client.on('packetreceive', (packet: { payload?: Buffer }) => {
-    if (!packet.payload) return;
+  client.on('packetreceive', (packet) => {
+    if (packet.cmd !== 'publish' || !packet.payload) return;
     try {
-      const msg = JSON.parse(packet.payload.toString());
+      const msg = JSON.parse(packet.payload.toString()) as RobotUpdate;
       robotState = Object.assign(robotState, msg.state.reported);
-      client.emit('update', msg);
-      client.emit('state', robotState);
+      emit('update', msg);
+      emit('state', robotState);
       if (robotState.cap) cap = { ...robotState.cap };
     } catch {}
   });
@@ -238,5 +265,6 @@ export default function localV2(
     setAlwaysFinishOff: () => apiCall('delta', { binPause: true }),
   };
 
-  return Object.assign(client, methods);
+  // The client emits the LocalV2Events through `emit` above.
+  return Object.assign(client, methods) as unknown as LocalV2;
 }
