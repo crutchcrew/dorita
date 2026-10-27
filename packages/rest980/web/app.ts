@@ -1,7 +1,7 @@
 // Web UI for the rest980 server. Plain TypeScript with no imports at
 // runtime: the server strips the types when it serves this file as /app.js.
 
-import type { MissionUpdate, Pose, RobotState, UmiResponse, WeekSchedule } from '../lib/types.ts';
+import type { MissionUpdate, Pose, RobotState, UmiResponse, WeekSchedule } from 'dorita980';
 import type { RobotStatus } from '../server/robot.ts';
 
 type Prefs = Record<'carpetBoost' | 'cleaningPasses' | 'edgeClean' | 'alwaysFinish', string>;

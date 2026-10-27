@@ -48,6 +48,12 @@ export interface RobotState {
   [key: string]: unknown;
 }
 
+// A raw state message from a firmware 2.x robot, emitted as 'update'.
+export interface RobotUpdate {
+  state: { reported: RobotState };
+  [key: string]: unknown;
+}
+
 // Emitted by the firmware 2.x client every `emitIntervalTime` ms.
 export interface MissionUpdate {
   cleanMissionStatus?: CleanMissionStatus;

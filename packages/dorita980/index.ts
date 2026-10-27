@@ -9,7 +9,13 @@ import type { LocalV2, LocalV2Options } from './lib/v2/local.ts';
 
 export type { CloudV1 } from './lib/v1/cloud.ts';
 export type { CleaningPreferences, LocalV1, MissionFlags } from './lib/v1/local.ts';
-export type { LocalV2, LocalV2Methods, LocalV2Options } from './lib/v2/local.ts';
+export type {
+  LocalV2,
+  LocalV2EventMethods,
+  LocalV2Events,
+  LocalV2Methods,
+  LocalV2Options,
+} from './lib/v2/local.ts';
 export type { Callback, RobotPublicInfo } from './lib/discovery.ts';
 export type * from './lib/types.ts';
 

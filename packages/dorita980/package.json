@@ -1,0 +1,70 @@
+{
+  "name": "dorita980",
+  "version": "4.0.0",
+  "description": "Unofficial iRobot Roomba library",
+  "keywords": [
+    "675",
+    "690",
+    "960",
+    "980",
+    "IoT",
+    "Roomba",
+    "alexa",
+    "bun",
+    "cleaner",
+    "cloud",
+    "e5",
+    "i7",
+    "iRobot",
+    "library",
+    "local",
+    "robot",
+    "sdk",
+    "unofficial",
+    "vacuum",
+    "wifi"
+  ],
+  "homepage": "https://github.com/koalazak/dorita980#readme",
+  "bugs": {
+    "url": "https://github.com/koalazak/dorita980/issues"
+  },
+  "license": "MIT",
+  "author": "koalazak <zak.tux@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koalazak/dorita980.git",
+    "directory": "packages/dorita980"
+  },
+  "bin": {
+    "get-roomba-password": "./dist/bin/getpassword.js",
+    "get-roomba-password-cloud": "./dist/bin/getPasswordCloud.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p .",
+    "test": "bun test",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build",
+    "getpassword": "bun bin/getpassword.ts",
+    "get-password-cloud": "bun bin/getPasswordCloud.ts"
+  },
+  "dependencies": {
+    "mqtt": "^5.16.1"
+  },
+  "engines": {
+    "bun": ">=1.2.21",
+    "node": ">=20.19.0"
+  }
+}

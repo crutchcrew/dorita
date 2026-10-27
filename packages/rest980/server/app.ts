@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
 import { routes } from './api.ts';
 import type { Config } from './config.ts';
 import type { Robot, RobotStatus } from './robot.ts';
-import type { MissionUpdate } from '../lib/types.ts';
+import type { MissionUpdate } from 'dorita980';
 
 const WEB_DIR = path.join(import.meta.dirname, '..', 'web');
 const CONTENT_TYPES: Record<string, string> = {
@@ -31,7 +32,7 @@ export interface AppOptions {
   log?: ((line: string) => void) | false;
 }
 
-// The package version, read from the nearest package.json so it works both
+// The rest980 version, read from the nearest package.json so it works both
 // from the sources and from the compiled dist/ folder.
 function packageVersion(): string {
   let dir = import.meta.dirname;
@@ -39,12 +40,17 @@ function packageVersion(): string {
     const file = path.join(dir, 'package.json');
     if (fs.existsSync(file)) {
       const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
-      if (pkg.name === 'dorita980') return pkg.version;
+      if (pkg.name === 'rest980') return pkg.version;
     }
     const parent = path.dirname(dir);
     if (parent === dir) return 'unknown';
     dir = parent;
   }
+}
+
+function doritaVersion(): string {
+  const require = createRequire(import.meta.url);
+  return (require('dorita980/package.json') as { version: string }).version;
 }
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
@@ -237,6 +243,7 @@ export function createApp(options: AppOptions): App {
   const log = options.log === undefined ? console.log : options.log;
   const staticFiles = loadStaticFiles();
   const version = packageVersion();
+  const dorita980Version = doritaVersion();
   const basicAuth =
     config.basicAuthUser && config.basicAuthPass
       ? { user: config.basicAuthUser, pass: config.basicAuthPass }
@@ -258,7 +265,7 @@ export function createApp(options: AppOptions): App {
   add('GET', '/api/info/version', () =>
     json({
       rest980: version,
-      dorita980: version,
+      dorita980: dorita980Version,
       node: process.version,
       bun: process.versions.bun || null,
       firmwareVersion: robot.firmwareVersion,

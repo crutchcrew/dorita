@@ -1,8 +1,6 @@
 import { EventEmitter } from 'node:events';
-import dorita980 from '../index.ts';
-import type { Callback } from '../lib/discovery.ts';
-import type { LocalV2, LocalV2Options } from '../lib/v2/local.ts';
-import type { MissionUpdate, RobotState } from '../lib/types.ts';
+import dorita980 from 'dorita980';
+import type { Callback, LocalV2, LocalV2Options, MissionUpdate, RobotState } from 'dorita980';
 import type { Config } from './config.ts';
 
 const V1_ACTIONS = ['start', 'pause', 'stop', 'resume', 'dock'];
@@ -206,11 +204,11 @@ export class Robot extends EventEmitter {
     });
     client.on('reconnect', () => this.setConnection('connecting'));
     client.on('offline', () => this.setConnection('offline'));
-    client.on('state' as 'message', (state: RobotState) => {
+    client.on('state', (state) => {
       this.state = state;
       this.emit('state', state);
     });
-    client.on('mission' as 'message', (mission: MissionUpdate) => {
+    client.on('mission', (mission) => {
       this.trackPath(mission);
       this.emit('mission', mission);
     });

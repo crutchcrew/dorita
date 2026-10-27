@@ -7,5 +7,5 @@
     "rootDir": ".",
     "declaration": true
   },
-  "include": ["index.ts", "lib", "bin", "server"]
+  "include": ["index.ts", "lib", "bin"]
 }

@@ -1,0 +1,19 @@
+{
+  "name": "@dorita980/mock-robot",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A fake firmware 2.x Roomba for tests and local development",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "start": "bun index.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "dorita980": "workspace:*",
+    "mqtt-packet": "^9.0.2"
+  }
+}
