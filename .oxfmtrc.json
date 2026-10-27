@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "printWidth": 100,
+  "ignorePatterns": ["dist/**", "coverage/**", "bun.lock", "READMEv1.6.6.md"]
+}
