@@ -124,7 +124,15 @@ export async function startServer(options: StartServerOptions = {}): Promise<Ser
   const app = createApp({ config, robot, log: options.log });
   const serve = typeof Bun !== 'undefined' && !options.useNodeHttp ? serveWithBun : serveWithNode;
   const server = await serve(app, config);
-  const internal = typeof config.internalPort === 'number' ? await serve(app, config, true) : null;
+  let internal: RunningServer | null = null;
+  if (typeof config.internalPort === 'number') {
+    try {
+      internal = await serve(app, config, true);
+    } catch (error) {
+      await server.stop();
+      throw error;
+    }
+  }
 
   robot.start();
 

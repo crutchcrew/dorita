@@ -40,6 +40,22 @@ function configFor(robotPort: number, overrides: Partial<Config> = {}): Config {
   };
 }
 
+// Listens the way the server does (no host: all addresses).
+function listenOn(port: number): Promise<net.Server> {
+  const server = net.createServer();
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, () => resolve(server));
+  });
+}
+
+async function freePort(): Promise<number> {
+  const server = await listenOn(0);
+  const { port } = server.address() as net.AddressInfo;
+  await new Promise((resolve) => server.close(resolve));
+  return port;
+}
+
 const ping = (port: number | null): Promise<number> =>
   fetch('http://127.0.0.1:' + port + '/ping').then((res) => res.status);
 
@@ -104,6 +120,23 @@ for (const useNodeHttp of [false, true]) {
       it('sees the client address, for trusted networks', async () => {
         expect(await pingStatus('127.0.0.1', useNodeHttp)).toBe(200);
         expect(await pingStatus('192.0.2.1', useNodeHttp)).toBe(403);
+      });
+
+      it('frees the main port when the internal one cannot bind', async () => {
+        const busy = await listenOn(0);
+        const mainPort = await freePort();
+        const config = configFor(1, {
+          port: mainPort,
+          internalPort: (busy.address() as net.AddressInfo).port,
+          enableLocal: 'no',
+        });
+        try {
+          await expect(startServer({ config, log: false, useNodeHttp })).rejects.toThrow();
+          // Fails with EADDRINUSE if startServer left the main listener open.
+          (await listenOn(mainPort)).close();
+        } finally {
+          busy.close();
+        }
       });
 
       it('trusts only the internal listener when there is one', async () => {

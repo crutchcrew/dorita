@@ -107,6 +107,9 @@ describe('validateConfig', () => {
     expect(() => validateConfig({ ...base, trustedNetworks: '10.0.0.0/x' })).toThrow(
       /TRUSTED_NETWORKS/,
     );
+    expect(() => validateConfig({ ...base, trustedNetworks: '10.0.0.0/8/32' })).toThrow(
+      /TRUSTED_NETWORKS/,
+    );
     expect(() => validateConfig({ ...base, trustedNetworks: '10.0.0.0/8, ::1' })).not.toThrow();
   });
 
@@ -117,6 +120,14 @@ describe('validateConfig', () => {
     expect(loadConfig({ INTERNAL_PORT: '8099' }, os.tmpdir()).internalPort).toBe(8099);
     expect(loadConfig({}, os.tmpdir()).internalPort).toBeNull();
     expect(loadConfig({}, tempConfig({ internalPort: 0 })).internalPort).toBe(0);
+  });
+
+  it('rejects an invalid robot TLS version before the server starts', () => {
+    const base = { blid: 'a', password: 'b' };
+    expect(() => validateConfig({ ...base, robotTlsMaxVersion: '1.2' })).toThrow(
+      /ROBOT_TLS_MAX_VERSION/,
+    );
+    expect(() => validateConfig({ ...base, robotTlsMaxVersion: 'TLSv1.2' })).not.toThrow();
   });
 
   it('accepts a valid config', () => {

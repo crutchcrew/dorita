@@ -9,9 +9,12 @@ if [ "$(id -u)" != 0 ]; then
 fi
 
 if [ -n "${CONFIG_FILE:-}" ] && [ -f "$CONFIG_FILE" ]; then
-  install -d -m 0700 -o node -g node /tmp/rest980
-  install -m 0400 -o node -g node "$CONFIG_FILE" /tmp/rest980/config.json
-  export CONFIG_FILE=/tmp/rest980/config.json
+  # A fresh, unpredictable directory: the writable layer survives a container
+  # restart, and a fixed path could be swapped for a symlink in between.
+  config_dir="$(mktemp -d)"
+  chown node:node "$config_dir"
+  install -m 0400 -o node -g node "$CONFIG_FILE" "$config_dir/config.json"
+  export CONFIG_FILE="$config_dir/config.json"
 fi
 
 if ! setpriv --reuid=node --regid=node --clear-groups true 2>/dev/null; then

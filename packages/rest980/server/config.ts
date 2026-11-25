@@ -129,6 +129,11 @@ export function validateConfig(config: Partial<Config>): void {
     throw new Error('Both SSL_KEY_FILE and SSL_CERT_FILE must be set to enable HTTPS.');
   }
   if (config.trustedNetworks) parseNetworks(config.trustedNetworks);
+  // dorita980 rejects a bad value only when it connects, after the server binds.
+  const tlsVersions = ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3'];
+  if (config.robotTlsMaxVersion && !tlsVersions.includes(config.robotTlsMaxVersion)) {
+    throw new Error('ROBOT_TLS_MAX_VERSION must be one of ' + tlsVersions.join(', ') + '.');
+  }
   if (config.internalPort !== null && config.internalPort !== undefined) {
     const clash = config.internalPort !== 0 && config.internalPort === config.port;
     if (!Number.isInteger(config.internalPort) || clash) {
@@ -175,8 +180,8 @@ export function parseNetworks(list: string): (address: string | undefined) => bo
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)) {
-    const [raw = '', bits] = entry.split('/');
-    if (!net.isIP(raw) || (bits !== undefined && !/^\d+$/.test(bits))) {
+    const [raw = '', bits, ...extra] = entry.split('/');
+    if (!net.isIP(raw) || extra.length || (bits !== undefined && !/^\d+$/.test(bits))) {
       throw new Error('TRUSTED_NETWORKS: not an IP address or CIDR: ' + entry);
     }
     let address = raw;
