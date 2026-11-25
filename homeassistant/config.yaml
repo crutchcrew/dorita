@@ -1,0 +1,47 @@
+# Home Assistant app (formerly add-on) for the rest980 server and web UI.
+# It runs the same image as `docker run` (Dockerfile at the repo root), pulled
+# from GHCR as image:version; `version` must match a published tag (see
+# .github/workflows/image.yml), and CI checks it against rest980's version.
+name: Dorita
+version: '4.0.0'
+slug: dorita
+description: Local control and a live map for iRobot Roomba vacuums, no iRobot cloud
+url: https://github.com/crutchcrew/dorita
+image: ghcr.io/crutchcrew/dorita
+arch: [aarch64, amd64]
+startup: application
+boot: auto
+# Opens in the sidebar behind Home Assistant's own login.
+ingress: true
+ingress_port: 3000
+panel_icon: mdi:robot-vacuum
+panel_title: Roomba
+watchdog: tcp://[HOST]:[PORT:3000]
+# Off by default. Map it on the Network tab to reach the API from outside
+# Home Assistant; then set basic auth, or add those clients to trusted_networks.
+ports:
+  3000/tcp: null
+ports_description:
+  3000/tcp: REST API and web UI outside Home Assistant (needs basic auth)
+environment:
+  CONFIG_FILE: /data/options.json
+options:
+  blid: ''
+  password: ''
+  robotIP: ''
+  firmwareVersion: 2
+  keepAlive: true
+  trustedNetworks:
+    - 172.30.32.0/23
+schema:
+  blid: str
+  password: password
+  robotIP: str?
+  robotPort: port?
+  firmwareVersion: list(1|2)
+  keepAlive: bool
+  trustedNetworks: [str]
+  basicAuthUser: str?
+  basicAuthPass: password?
+  robotCiphers: str?
+  robotTlsMaxVersion: list(TLSv1.2|TLSv1.3)?

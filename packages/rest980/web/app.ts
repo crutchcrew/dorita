@@ -646,7 +646,7 @@ async function runAction(btn: HTMLButtonElement): Promise<void> {
   btn.setAttribute('aria-busy', 'true');
   btn.disabled = true;
   try {
-    await api('/api/local/action/' + action, { method: 'POST' });
+    await api('api/local/action/' + action, { method: 'POST' });
     toast(ACTION_MESSAGES[action] || 'Done');
     if (!(ui.status && ui.status.live)) setTimeout(refresh, 1000);
   } catch (error) {
@@ -663,7 +663,7 @@ async function setPref(fieldset: HTMLFieldSetElement, input: HTMLInputElement): 
   ui.busyPrefs.add(key);
   fieldset.setAttribute('aria-busy', 'true');
   try {
-    await api('/api/local/config/' + key + '/' + input.value, { method: 'POST' });
+    await api('api/local/config/' + key + '/' + input.value, { method: 'POST' });
     ui.view.prefs = { ...ui.view.prefs, [key]: input.value } as Prefs;
     toast('Preference saved');
     if (!(ui.status && ui.status.live)) loadPreferences();
@@ -696,7 +696,7 @@ async function saveSchedule(): Promise<void> {
   btn.disabled = true;
   btn.setAttribute('aria-busy', 'true');
   try {
-    await api('/api/local/config/week', { method: 'POST', body: week });
+    await api('api/local/config/week', { method: 'POST', body: week });
     ui.scheduleDirty = false;
     ui.view.schedule = week;
     $('schedule').dataset.key = JSON.stringify(week);
@@ -714,9 +714,9 @@ async function saveSchedule(): Promise<void> {
 async function loadPreferences(): Promise<void> {
   if (!ui.status || ui.status.firmwareVersion !== 1) return;
   try {
-    const prefs = prefsFromV1(await api('/api/local/config/preferences'));
+    const prefs = prefsFromV1(await api('api/local/config/preferences'));
     if (prefs) ui.view.prefs = prefs;
-    const week = unwrap(await api('/api/local/config/week'));
+    const week = unwrap(await api('api/local/config/week'));
     if (week && week.cycle) ui.view.schedule = week;
     renderView();
   } catch (error) {
@@ -728,10 +728,10 @@ async function refresh(): Promise<void> {
   if (!ui.status) return;
   try {
     if (ui.status.firmwareVersion === 1) {
-      ui.view = viewFromMission(await api('/api/local/info/mission'), ui.view);
+      ui.view = viewFromMission(await api('api/local/info/mission'), ui.view);
       addPathPoint(ui.view.pose, ui.view);
     } else {
-      const state = await api(ui.status.live ? '/api/status' : '/api/local/info/state');
+      const state = await api(ui.status.live ? 'api/status' : 'api/local/info/state');
       const robotState = ui.status.live ? state.state : state;
       ui.view = viewFromState(robotState, ui.view);
       ui.view.rawState = robotState;
@@ -756,7 +756,7 @@ function startPolling(): void {
 }
 
 function startEvents(): void {
-  const events = new EventSource('/api/events');
+  const events = new EventSource('api/events');
   ui.events = events;
   events.addEventListener('status', (e) => {
     ui.status = { ...ui.status, ...JSON.parse(e.data) } as StatusResponse;
@@ -811,7 +811,7 @@ function init(): void {
   $('map-clear').addEventListener('click', () => {
     ui.path = [];
     scheduleMapDraw();
-    api('/api/path', { method: 'DELETE' }).catch(() => {});
+    api('api/path', { method: 'DELETE' }).catch(() => {});
   });
   if (window.ResizeObserver) new ResizeObserver(scheduleMapDraw).observe($('map'));
   connect();
@@ -819,7 +819,7 @@ function init(): void {
 
 async function connect(): Promise<void> {
   try {
-    const status: StatusResponse = await api('/api/status');
+    const status: StatusResponse = await api('api/status');
     ui.status = status;
     ui.path = status.path || [];
     if (status.state && status.state.cleanMissionStatus)

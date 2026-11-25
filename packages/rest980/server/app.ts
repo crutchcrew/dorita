@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { routes } from './api.ts';
+import { parseNetworks } from './config.ts';
 import type { Config } from './config.ts';
 import type { Robot, RobotStatus } from './robot.ts';
 import type { MissionUpdate } from 'dorita980';
@@ -22,8 +23,13 @@ const SSE_KEEPALIVE_MS = 15000;
 
 type Handler = (request: Request) => Response | Promise<Response>;
 
+// What the transport knows about the client, beyond the Request itself.
+export interface ClientInfo {
+  address?: string;
+}
+
 export interface App {
-  fetch: (request: Request) => Promise<Response>;
+  fetch: (request: Request, client?: ClientInfo) => Promise<Response>;
 }
 
 export interface AppOptions {
@@ -248,6 +254,22 @@ export function createApp(options: AppOptions): App {
     config.basicAuthUser && config.basicAuthPass
       ? { user: config.basicAuthUser, pass: config.basicAuthPass }
       : null;
+  const trusted = config.trustedNetworks ? parseNetworks(config.trustedNetworks) : null;
+
+  // Without trusted networks, basic auth (if configured) applies to everyone.
+  // With them, trusted clients skip it, and everyone else needs it: they are
+  // refused outright when no basic auth is configured.
+  function authorize(request: Request, client: ClientInfo): Response | null {
+    if (trusted?.(client.address)) return null;
+    if (basicAuth) {
+      if (checkBasicAuth(request, basicAuth.user, basicAuth.pass)) return null;
+      return new Response('Unauthorized', {
+        status: 401,
+        headers: { 'WWW-Authenticate': 'Basic realm="rest980"' },
+      });
+    }
+    return trusted ? errorResponse(403, 'Forbidden.') : null;
+  }
 
   const table = new Map<string, Handler>();
   const add = (method: string, routePath: string, handler: Handler) =>
@@ -313,13 +335,9 @@ export function createApp(options: AppOptions): App {
     for (const method of route.methods) add(method, route.path, handler);
   }
 
-  async function handle(request: Request, url: URL): Promise<Response> {
-    if (basicAuth && !checkBasicAuth(request, basicAuth.user, basicAuth.pass)) {
-      return new Response('Unauthorized', {
-        status: 401,
-        headers: { 'WWW-Authenticate': 'Basic realm="rest980"' },
-      });
-    }
+  async function handle(request: Request, url: URL, client: ClientInfo): Promise<Response> {
+    const denied = authorize(request, client);
+    if (denied) return denied;
 
     const method = request.method === 'HEAD' ? 'GET' : request.method;
     const handler = table.get(method + ' ' + url.pathname);
@@ -338,14 +356,14 @@ export function createApp(options: AppOptions): App {
   }
 
   return {
-    async fetch(request) {
+    async fetch(request, client = {}) {
       const started = Date.now();
       let url: URL | undefined;
       let response: Response;
       try {
         // With a malformed Host header Bun.serve passes a relative URL.
         url = new URL(request.url, 'http://localhost');
-        response = await handle(request, url);
+        response = await handle(request, url, client);
       } catch (error) {
         response = url
           ? errorResponse(500, (error as Error).message || String(error))

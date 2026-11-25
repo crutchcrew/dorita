@@ -20,6 +20,9 @@ const baseConfig: Config = {
   basicAuthPass: null,
   sslKeyFile: null,
   sslCertFile: null,
+  trustedNetworks: null,
+  robotCiphers: null,
+  robotTlsMaxVersion: null,
 };
 
 // A stand-in for the dorita980 module returning firmware 1.x style clients.
@@ -55,8 +58,8 @@ function setup(overrides: Partial<Config> = {}) {
   const robot = new Robot(config, { dorita, timeoutMs: 200 });
   robot.start();
   const app = createApp({ config, robot, log: false });
-  const request = (path: string, init?: RequestInit) =>
-    app.fetch(new Request('http://localhost' + path, init));
+  const request = (path: string, init?: RequestInit, address = '203.0.113.7') =>
+    app.fetch(new Request('http://localhost' + path, init), { address });
   return { app, robot, dorita, request };
 }
 
@@ -86,6 +89,14 @@ describe('rest980 app', () => {
     const res = await request('/app.js');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('javascript');
+  });
+
+  it('uses relative URLs, so the UI also works under a path prefix (HA ingress)', async () => {
+    const { request } = setup();
+    const html = await (await request('/', { headers: { Accept: 'text/html' } })).text();
+    const script = await (await request('/app.js')).text();
+    expect(html).not.toMatch(/(?:src|href)="\//);
+    expect(script).not.toMatch(/['"`]\/api\//);
   });
 
   it('does not serve files outside web/', async () => {
@@ -226,6 +237,41 @@ describe('rest980 app', () => {
     it('accepts the right credentials', async () => {
       const { request } = setup({ basicAuthUser: 'admin', basicAuthPass: 'secret' });
       expect((await request('/ping', { headers: auth('admin', 'secret') })).status).toBe(200);
+    });
+  });
+
+  describe('with trusted networks', () => {
+    const trustedNetworks = '172.30.32.0/23, 10.0.10.158';
+
+    it('serves trusted clients without credentials', async () => {
+      const { request } = setup({ trustedNetworks, basicAuthUser: 'admin', basicAuthPass: 's' });
+      for (const address of ['172.30.32.1', '172.30.33.250', '::ffff:10.0.10.158']) {
+        expect((await request('/api/info/version', {}, address)).status).toBe(200);
+      }
+    });
+
+    it('refuses everyone else when no basic auth is configured', async () => {
+      const { request, dorita } = setup({ trustedNetworks });
+      for (const address of ['10.0.30.50', '172.30.34.1', 'fd00::1', '']) {
+        expect((await request('/ping', {}, address)).status).toBe(403);
+        expect((await request('/api/local/action/start', { method: 'POST' }, address)).status).toBe(
+          403,
+        );
+      }
+      expect(dorita.calls.some((call) => call.name === 'start')).toBe(false);
+    });
+
+    it('asks everyone else for basic auth when it is configured', async () => {
+      const { request } = setup({ trustedNetworks, basicAuthUser: 'admin', basicAuthPass: 's' });
+      expect((await request('/ping', {}, '10.0.30.50')).status).toBe(401);
+      expect((await request('/ping', { headers: auth('admin', 's') }, '10.0.30.50')).status).toBe(
+        200,
+      );
+    });
+
+    it('trusts nobody when the list has no entries', async () => {
+      const { request } = setup({ trustedNetworks: ',' });
+      expect((await request('/ping', {}, '127.0.0.1')).status).toBe(403);
     });
   });
 });

@@ -1,29 +1,43 @@
-FROM oven/bun:1-slim
+# Builds with Bun, runs on Node.js: Node's OpenSSL has the AES128-SHA256 cipher
+# that many robots need and Bun's BoringSSL lacks (see "Runtime and TLS").
+# One image for both setups: standalone (env vars, `docker run`) and the
+# Home Assistant app in homeassistant/ (options in /data/options.json).
 
-WORKDIR /app
-
-ENV NODE_ENV=production
-
+FROM oven/bun:1-slim AS deps
+WORKDIR /src
 COPY package.json bun.lock ./
 COPY packages/dorita980/package.json ./packages/dorita980/
 COPY packages/rest980/package.json ./packages/rest980/
 COPY packages/mock-robot/package.json ./packages/mock-robot/
 RUN bun install --frozen-lockfile --production
 
-# Bun runs the TypeScript sources directly. The `paths` in rest980's tsconfig
-# point the dorita980 import at its sources instead of the unbuilt dist/.
+FROM deps AS build
+RUN bun install --frozen-lockfile
 COPY tsconfig.base.json ./
-COPY packages/rest980/tsconfig.json ./packages/rest980/
-COPY packages/dorita980/index.ts ./packages/dorita980/
-COPY packages/dorita980/lib ./packages/dorita980/lib
-COPY packages/rest980/bin ./packages/rest980/bin
-COPY packages/rest980/server ./packages/rest980/server
-COPY packages/rest980/web ./packages/rest980/web
+COPY packages ./packages
+RUN bun run build
 
-# Configure with BLID, PASSWORD, ROBOT_IP, FIRMWARE_VERSION, ... (see README).
-ENV PORT=3000
+FROM node:22-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production \
+    PORT=3000
+# Bun's isolated linker keeps per-package node_modules symlinks into
+# node_modules/.bun, so copy both levels.
+COPY --from=deps /src/node_modules ./node_modules
+COPY --from=deps /src/packages/dorita980/node_modules ./packages/dorita980/node_modules
+COPY --from=deps /src/packages/rest980/node_modules ./packages/rest980/node_modules
+COPY --from=build /src/package.json ./
+COPY --from=build /src/packages/dorita980/package.json ./packages/dorita980/
+COPY --from=build /src/packages/dorita980/dist ./packages/dorita980/dist
+COPY --from=build /src/packages/rest980/package.json ./packages/rest980/
+COPY --from=build /src/packages/rest980/dist ./packages/rest980/dist
+COPY docker-entrypoint.sh /usr/local/bin/
+
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/ping').then(r=>process.exit(r.status<500?0:1),()=>process.exit(1))"]
 
-USER bun
-
-CMD ["bun", "packages/rest980/bin/rest980.ts"]
+# Starts as root only to make a root-only config file (Home Assistant's
+# options.json) readable, then runs as `node`. `docker run --user` skips that.
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["node", "packages/rest980/dist/bin/rest980.js"]

@@ -32,9 +32,43 @@ function configFor(robotPort: number, overrides: Partial<Config> = {}): Config {
     basicAuthPass: null,
     sslKeyFile: null,
     sslCertFile: null,
+    trustedNetworks: null,
+    robotCiphers: null,
+    robotTlsMaxVersion: null,
     ...overrides,
   };
 }
+
+// Starts a server that trusts only `trustedNetworks` and pings it from 127.0.0.1.
+async function pingStatus(trustedNetworks: string, useNodeHttp: boolean): Promise<number> {
+  const server = await startServer({
+    config: configFor(1, { trustedNetworks, enableLocal: 'no' }),
+    log: false,
+    useNodeHttp,
+  });
+  try {
+    return (await fetch('http://127.0.0.1:' + server.port + '/ping')).status;
+  } finally {
+    await server.stop();
+  }
+}
+
+describe('robot TLS settings', () => {
+  it('connects with TLS capped at 1.2, as some robots need', async () => {
+    const mock = createMockRobot({ tickMs: 50 });
+    const robotPort = await mock.listen(0);
+    const server = await startServer({
+      config: configFor(robotPort, { robotTlsMaxVersion: 'TLSv1.2' }),
+      log: false,
+    });
+    try {
+      await waitFor(() => server.robot.connection === 'connected');
+    } finally {
+      await server.stop();
+      await mock.close();
+    }
+  });
+});
 
 for (const useNodeHttp of [false, true]) {
   describe(
@@ -62,6 +96,11 @@ for (const useNodeHttp of [false, true]) {
           headers: body ? { 'Content-Type': 'application/json' } : {},
           body: body ? JSON.stringify(body) : undefined,
         }).then((res) => res.json());
+
+      it('sees the client address, for trusted networks', async () => {
+        expect(await pingStatus('127.0.0.1', useNodeHttp)).toBe(200);
+        expect(await pingStatus('192.0.2.1', useNodeHttp)).toBe(403);
+      });
 
       it('reports a live connection and the robot state', async () => {
         const status = await waitFor(async () => {

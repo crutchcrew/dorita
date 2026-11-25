@@ -47,7 +47,7 @@ function serveWithNode(app: App, config: Config): Promise<RunningServer> {
       duplex: hasBody ? 'half' : undefined,
     } as RequestInit);
 
-    const response = await app.fetch(request);
+    const response = await app.fetch(request, { address: req.socket.remoteAddress });
     res.writeHead(response.status, Object.fromEntries(response.headers));
     if (!response.body || req.method === 'HEAD') return void res.end();
 
@@ -98,7 +98,8 @@ function serveWithNode(app: App, config: Config): Promise<RunningServer> {
 function serveWithBun(app: App, config: Config): Promise<RunningServer> {
   const server = Bun.serve({
     port: config.port,
-    fetch: app.fetch,
+    fetch: (request, bunServer) =>
+      app.fetch(request, { address: bunServer.requestIP(request)?.address }),
     // Event streams send a keep-alive comment every 15s.
     idleTimeout: 60,
     tls:

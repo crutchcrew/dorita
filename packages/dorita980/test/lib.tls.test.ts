@@ -8,6 +8,8 @@ afterEach(() => {
   if (env.ROBOT_CIPHERS === undefined) delete process.env.ROBOT_CIPHERS;
   process.env.ROBOT_TLS_LEGACY = env.ROBOT_TLS_LEGACY;
   if (env.ROBOT_TLS_LEGACY === undefined) delete process.env.ROBOT_TLS_LEGACY;
+  process.env.ROBOT_TLS_MAX_VERSION = env.ROBOT_TLS_MAX_VERSION;
+  if (env.ROBOT_TLS_MAX_VERSION === undefined) delete process.env.ROBOT_TLS_MAX_VERSION;
 });
 
 describe('resolveCiphers', () => {
@@ -53,5 +55,15 @@ describe('robotTlsOptions', () => {
   it('can disable legacy renegotiation', () => {
     process.env.ROBOT_TLS_LEGACY = '0';
     expect(robotTlsOptions().secureOptions).toBeUndefined();
+  });
+
+  it('leaves the TLS version to the runtime unless asked to cap it', () => {
+    delete process.env.ROBOT_TLS_MAX_VERSION;
+    expect(robotTlsOptions().maxVersion).toBeUndefined();
+    expect(robotTlsOptions({ maxVersion: 'TLSv1.2' }).maxVersion).toBe('TLSv1.2');
+    process.env.ROBOT_TLS_MAX_VERSION = 'TLSv1.3';
+    expect(robotTlsOptions({ maxVersion: 'TLSv1.2' }).maxVersion).toBe('TLSv1.3');
+    process.env.ROBOT_TLS_MAX_VERSION = '1.2';
+    expect(() => robotTlsOptions()).toThrow(/ROBOT_TLS_MAX_VERSION/);
   });
 });

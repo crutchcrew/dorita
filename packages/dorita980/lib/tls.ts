@@ -7,13 +7,18 @@ export const DEFAULT_CIPHERS = 'AES128-SHA256';
 export interface RobotTlsCustomOptions {
   ciphers?: string;
   secureOptions?: number;
+  // Some robots (e.g. Roomba j7) reset a handshake that offers TLS 1.3.
+  maxVersion?: tls.SecureVersion;
 }
 
 export interface RobotTlsOptions {
   rejectUnauthorized: false;
   ciphers?: string;
   secureOptions?: number;
+  maxVersion?: tls.SecureVersion;
 }
+
+const TLS_VERSIONS: readonly string[] = ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3'];
 
 function isCipherSupported(cipher: string): boolean {
   try {
@@ -46,6 +51,14 @@ export function robotTlsOptions(
     process.env.ROBOT_CIPHERS || customOptions.ciphers || defaultCiphers,
   );
   if (ciphers) options.ciphers = ciphers;
+
+  const maxVersion = process.env.ROBOT_TLS_MAX_VERSION || customOptions.maxVersion;
+  if (maxVersion) {
+    if (!TLS_VERSIONS.includes(maxVersion)) {
+      throw new Error('ROBOT_TLS_MAX_VERSION must be one of ' + TLS_VERSIONS.join(', ') + '.');
+    }
+    options.maxVersion = maxVersion as tls.SecureVersion;
+  }
 
   if (typeof customOptions.secureOptions !== 'undefined') {
     options.secureOptions = customOptions.secureOptions;
