@@ -46,12 +46,12 @@ robots) work.
 ## Using it from Home Assistant
 
 Home Assistant reaches the app on its internal network, without credentials, at
-`http://<hostname>:3000`. The hostname is on the app's **Info** tab (for this repository it looks
+`http://<hostname>:8099`. The hostname is on the app's **Info** tab (for this repository it looks
 like `xxxxxxxx-dorita`). For example, in `configuration.yaml`:
 
 ```yaml
 rest:
-  - resource: http://xxxxxxxx-dorita:3000/api/status
+  - resource: http://xxxxxxxx-dorita:8099/api/status
     scan_interval: 30
     sensor:
       - name: Roomba battery
@@ -67,7 +67,7 @@ rest:
 
 rest_command:
   roomba:
-    url: 'http://xxxxxxxx-dorita:3000/api/local/action/{{ action }}'
+    url: 'http://xxxxxxxx-dorita:8099/api/local/action/{{ action }}'
     method: post
 ```
 
@@ -76,18 +76,8 @@ can wrap the sensors and `rest_command.roomba` into a `vacuum` entity.
 
 ## Reaching it from outside Home Assistant
 
-The port is closed by default. To use the API from another machine (a dashboard, Prometheus):
-
-1. Map `3000/tcp` on the **Network** tab.
-2. Set `basicAuthUser` and `basicAuthPass`, or add that machine's IP to `trustedNetworks` (a
-   single IP, never your whole LAN: anyone in `trustedNetworks` can start the robot).
-
-Clients in `trustedNetworks` skip basic auth, and Docker can show a client relayed by
-`docker-proxy` (used, for example, for IPv6 when a network has no IPv6 NAT) with the internal
-gateway's address, `172.30.32.1`, which is trusted. After publishing the port, check from another
-machine over both IPv4 and IPv6 that you get `401` without credentials:
-
-```sh
-curl -s -o /dev/null -w '%{http_code}\n' http://<home assistant IPv4>:3000/ping
-curl -s -o /dev/null -w '%{http_code}\n' 'http://[<home assistant IPv6>]:3000/ping'
-```
+The port is closed by default. To use the API from another machine (a dashboard, Prometheus), map
+`3000/tcp` on the **Network** tab and set `basicAuthUser` and `basicAuthPass`. That port always
+asks for basic auth and answers `403` until it's configured: `trustedNetworks` apply only to the
+internal port `8099`, which Home Assistant never publishes. (A published port can't be trusted by
+address: Docker may relay its clients from an address inside Home Assistant's network.)

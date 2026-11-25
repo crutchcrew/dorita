@@ -21,6 +21,10 @@ export interface Config {
   // Comma-separated IPs/CIDRs whose requests skip basic auth. When set, other
   // clients need basic auth, and are refused if none is configured.
   trustedNetworks: string | null;
+  // A second, plain-HTTP listener for a proxy in front (Home Assistant
+  // ingress). When set, trustedNetworks apply only there, and `port` always
+  // requires basic auth: a published port can't inherit the proxy's trust.
+  internalPort: number | null;
   // Robot TLS settings, also read by dorita980 itself from the same variables.
   robotCiphers: string | null;
   robotTlsMaxVersion: string | null;
@@ -41,6 +45,7 @@ export const defaults: Config = {
   sslKeyFile: null,
   sslCertFile: null,
   trustedNetworks: null,
+  internalPort: null,
   robotCiphers: null,
   robotTlsMaxVersion: null,
 };
@@ -61,6 +66,7 @@ const envNames: Record<keyof Config, string> = {
   sslKeyFile: 'SSL_KEY_FILE',
   sslCertFile: 'SSL_CERT_FILE',
   trustedNetworks: 'TRUSTED_NETWORKS',
+  internalPort: 'INTERNAL_PORT',
   robotCiphers: 'ROBOT_CIPHERS',
   robotTlsMaxVersion: 'ROBOT_TLS_MAX_VERSION',
 };
@@ -101,6 +107,7 @@ export function loadConfig(
   const config = values as unknown as Config;
   config.port = parseInt(String(values.port), 10);
   config.robotPort = parseInt(String(values.robotPort), 10);
+  config.internalPort = values.internalPort ? parseInt(String(values.internalPort), 10) : null;
   config.firmwareVersion = parseInt(String(values.firmwareVersion), 10) === 1 ? 1 : 2;
   // The cloud API is not implemented for firmware 2.x.
   if (config.firmwareVersion === 2) config.enableCloud = 'no';
@@ -121,6 +128,12 @@ export function validateConfig(config: Partial<Config>): void {
     throw new Error('Both SSL_KEY_FILE and SSL_CERT_FILE must be set to enable HTTPS.');
   }
   if (config.trustedNetworks) parseNetworks(config.trustedNetworks);
+  if (config.internalPort !== null && config.internalPort !== undefined) {
+    const clash = config.internalPort !== 0 && config.internalPort === config.port;
+    if (!Number.isInteger(config.internalPort) || clash) {
+      throw new Error('INTERNAL_PORT must be a port number different from PORT.');
+    }
+  }
 }
 
 // "172.30.32.0/23, 10.0.0.5" -> a matcher for client addresses. IPv4-mapped

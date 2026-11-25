@@ -19,10 +19,10 @@ configuration:
     description: Holds the robot's only local connection for live updates. Turn off to leave it free for the iRobot app (no live map).
   trustedNetworks:
     name: Trusted networks
-    description: IPs/CIDRs served without basic auth. 172.30.32.0/23 is Home Assistant's internal network (the sidebar and integrations). Everyone else needs basic auth, or is refused.
+    description: IPs/CIDRs served without basic auth on the internal port (8099). 172.30.32.0/23 is Home Assistant's internal network (the sidebar and integrations). The published port never trusts anyone.
   basicAuthUser:
     name: Basic auth user
-    description: Only needed if you publish the port and reach it from outside the trusted networks.
+    description: Required to use the published port (3000) from outside Home Assistant.
   basicAuthPass:
     name: Basic auth password
   robotCiphers:

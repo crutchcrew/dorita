@@ -288,24 +288,25 @@ for example with `--read-only --cap-drop ALL`, add `--user 1000:1000`.
 
 Set environment variables (Bun loads `.env` automatically), or put the same keys in `config/default.json` or the file named by `CONFIG_FILE`. Environment variables win.
 
-| Config key           | Environment variable    | Description                                                                                                                                          |
-| -------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blid`               | `BLID`                  | **Required.** The robot's BLID.                                                                                                                      |
-| `password`           | `PASSWORD`              | **Required.** The robot's password.                                                                                                                  |
-| `robotIP`            | `ROBOT_IP`              | The robot's IP. If unset, the robot is found with a UDP broadcast at startup.                                                                        |
-| `port`               | `PORT`                  | HTTP port. Default `3000`.                                                                                                                           |
-| `robotPort`          | `ROBOT_PORT`            | The robot's MQTT/TLS port (firmware 2.x). Default `8883`.                                                                                            |
-| `firmwareVersion`    | `FIRMWARE_VERSION`      | `1` for firmware 1.6.x, `2` for firmware 2.x and later (including 3.x). Default `2`.                                                                 |
-| `enableLocal`        | `ENABLE_LOCAL`          | `no` turns off the local API. Default `yes`.                                                                                                         |
-| `enableCloud`        | `ENABLE_CLOUD`          | `no` turns off the cloud API (firmware 1.x only). Default `yes`.                                                                                     |
-| `keepAlive`          | `KEEP_ALIVE`            | `no` connects and disconnects on every request: slower, with no live updates, but it leaves the connection free for the official app. Default `yes`. |
-| `basicAuthUser`      | `BASIC_AUTH_USER`       | Turns on HTTP basic auth for the API and web UI. Set it together with `basicAuthPass`.                                                               |
-| `basicAuthPass`      | `BASIC_AUTH_PASS`       | See above.                                                                                                                                           |
-| `sslKeyFile`         | `SSL_KEY_FILE`          | Path to a key file to serve HTTPS. Set it together with `sslCertFile`.                                                                               |
-| `sslCertFile`        | `SSL_CERT_FILE`         | Path to a certificate file to serve HTTPS.                                                                                                           |
-| `trustedNetworks`    | `TRUSTED_NETWORKS`      | Comma-separated IPs/CIDRs served without basic auth. When set, every other client needs basic auth, or gets `403` if none is configured.             |
-| `robotCiphers`       | `ROBOT_CIPHERS`         | See [Runtime and TLS](#runtime-and-tls).                                                                                                             |
-| `robotTlsMaxVersion` | `ROBOT_TLS_MAX_VERSION` | See [Runtime and TLS](#runtime-and-tls).                                                                                                             |
+| Config key           | Environment variable    | Description                                                                                                                                                                             |
+| -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blid`               | `BLID`                  | **Required.** The robot's BLID.                                                                                                                                                         |
+| `password`           | `PASSWORD`              | **Required.** The robot's password.                                                                                                                                                     |
+| `robotIP`            | `ROBOT_IP`              | The robot's IP. If unset, the robot is found with a UDP broadcast at startup.                                                                                                           |
+| `port`               | `PORT`                  | HTTP port. Default `3000`.                                                                                                                                                              |
+| `robotPort`          | `ROBOT_PORT`            | The robot's MQTT/TLS port (firmware 2.x). Default `8883`.                                                                                                                               |
+| `firmwareVersion`    | `FIRMWARE_VERSION`      | `1` for firmware 1.6.x, `2` for firmware 2.x and later (including 3.x). Default `2`.                                                                                                    |
+| `enableLocal`        | `ENABLE_LOCAL`          | `no` turns off the local API. Default `yes`.                                                                                                                                            |
+| `enableCloud`        | `ENABLE_CLOUD`          | `no` turns off the cloud API (firmware 1.x only). Default `yes`.                                                                                                                        |
+| `keepAlive`          | `KEEP_ALIVE`            | `no` connects and disconnects on every request: slower, with no live updates, but it leaves the connection free for the official app. Default `yes`.                                    |
+| `basicAuthUser`      | `BASIC_AUTH_USER`       | Turns on HTTP basic auth for the API and web UI. Set it together with `basicAuthPass`.                                                                                                  |
+| `basicAuthPass`      | `BASIC_AUTH_PASS`       | See above.                                                                                                                                                                              |
+| `sslKeyFile`         | `SSL_KEY_FILE`          | Path to a key file to serve HTTPS. Set it together with `sslCertFile`.                                                                                                                  |
+| `sslCertFile`        | `SSL_CERT_FILE`         | Path to a certificate file to serve HTTPS.                                                                                                                                              |
+| `trustedNetworks`    | `TRUSTED_NETWORKS`      | Comma-separated IPs/CIDRs served without basic auth. When set, every other client needs basic auth, or gets `403` if none is configured.                                                |
+| `internalPort`       | `INTERNAL_PORT`         | A second, plain-HTTP port for a proxy in front, such as Home Assistant ingress. When set, `trustedNetworks` apply only on it, and `port` always requires basic auth (`403` without it). |
+| `robotCiphers`       | `ROBOT_CIPHERS`         | See [Runtime and TLS](#runtime-and-tls).                                                                                                                                                |
+| `robotTlsMaxVersion` | `ROBOT_TLS_MAX_VERSION` | See [Runtime and TLS](#runtime-and-tls).                                                                                                                                                |
 
 The [TLS](#runtime-and-tls) and [cloud auth](#getting-your-blid-and-password) environment variables are passed through to the library.
 
@@ -412,8 +413,9 @@ Home Assistant's login. In Home Assistant, go to **Settings → Apps → App sto
 add `https://github.com/crutchcrew/dorita`, then install **Dorita**. Setup, options and examples for
 Home Assistant sensors and commands are in [homeassistant/DOCS.md](homeassistant/DOCS.md).
 
-The app runs the published image with its options as the config file, and trusts only Home
-Assistant's internal network (`172.30.32.0/23`); its port isn't published unless you map it.
+The app runs the published image with its options as the config file. Ingress and Home Assistant
+use an internal port (`INTERNAL_PORT=8099`) that trusts only Home Assistant's network
+(`172.30.32.0/23`); port 3000 is closed unless you map it, and then always requires basic auth.
 
 ## Library API
 

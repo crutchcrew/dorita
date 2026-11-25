@@ -33,11 +33,15 @@ function configFor(robotPort: number, overrides: Partial<Config> = {}): Config {
     sslKeyFile: null,
     sslCertFile: null,
     trustedNetworks: null,
+    internalPort: null,
     robotCiphers: null,
     robotTlsMaxVersion: null,
     ...overrides,
   };
 }
+
+const ping = (port: number | null): Promise<number> =>
+  fetch('http://127.0.0.1:' + port + '/ping').then((res) => res.status);
 
 // Starts a server that trusts only `trustedNetworks` and pings it from 127.0.0.1.
 async function pingStatus(trustedNetworks: string, useNodeHttp: boolean): Promise<number> {
@@ -100,6 +104,25 @@ for (const useNodeHttp of [false, true]) {
       it('sees the client address, for trusted networks', async () => {
         expect(await pingStatus('127.0.0.1', useNodeHttp)).toBe(200);
         expect(await pingStatus('192.0.2.1', useNodeHttp)).toBe(403);
+      });
+
+      it('trusts only the internal listener when there is one', async () => {
+        const split = await startServer({
+          config: configFor(1, {
+            trustedNetworks: '127.0.0.1',
+            internalPort: 0,
+            enableLocal: 'no',
+          }),
+          log: false,
+          useNodeHttp,
+        });
+        try {
+          expect(split.internalPort).toBeGreaterThan(0);
+          expect(await ping(split.internalPort)).toBe(200);
+          expect(await ping(split.port)).toBe(403);
+        } finally {
+          await split.stop();
+        }
       });
 
       it('reports a live connection and the robot state', async () => {

@@ -16,6 +16,7 @@ function logStatus(status: RobotStatus): void {
 try {
   const server = await startServer();
   console.log('rest980 listening on ' + server.url);
+  if (server.internalPort) console.log('internal listener on port ' + server.internalPort);
 
   logStatus(server.robot.status());
   server.robot.on('status', logStatus);

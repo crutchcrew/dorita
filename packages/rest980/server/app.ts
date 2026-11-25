@@ -26,6 +26,8 @@ type Handler = (request: Request) => Response | Promise<Response>;
 // What the transport knows about the client, beyond the Request itself.
 export interface ClientInfo {
   address?: string;
+  // Arrived on the internal listener (config.internalPort).
+  internal?: boolean;
 }
 
 export interface App {
@@ -258,9 +260,14 @@ export function createApp(options: AppOptions): App {
 
   // Without trusted networks, basic auth (if configured) applies to everyone.
   // With them, trusted clients skip it, and everyone else needs it: they are
-  // refused outright when no basic auth is configured.
+  // refused outright when no basic auth is configured. With an internal
+  // listener, trust applies only there and the main port always needs basic
+  // auth: Docker's userland proxy can relay a published port's clients from
+  // an address inside the trusted network.
+  const split = typeof config.internalPort === 'number';
   function authorize(request: Request, client: ClientInfo): Response | null {
-    if (trusted?.(client.address)) return null;
+    const internal = !split || Boolean(client.internal);
+    if (internal && trusted?.(client.address)) return null;
     if (basicAuth) {
       if (checkBasicAuth(request, basicAuth.user, basicAuth.pass)) return null;
       return new Response('Unauthorized', {
@@ -268,7 +275,7 @@ export function createApp(options: AppOptions): App {
         headers: { 'WWW-Authenticate': 'Basic realm="rest980"' },
       });
     }
-    return trusted ? errorResponse(403, 'Forbidden.') : null;
+    return trusted || !internal ? errorResponse(403, 'Forbidden.') : null;
   }
 
   const table = new Map<string, Handler>();

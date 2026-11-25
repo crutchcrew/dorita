@@ -25,7 +25,7 @@ jobs:
           image=ghcr.io/${GITHUB_REPOSITORY,,}
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             version="${GITHUB_REF_NAME#v}"
-            app="$(sed -n 's/^version: *"\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' homeassistant/config.yaml)"
+            app="$(python3 -c 'import yaml; print(yaml.safe_load(open("homeassistant/config.yaml"))["version"])')"
             [ "$version" = "$app" ] || { echo "tag $version != homeassistant/config.yaml $app"; exit 1; }
             echo "tags=$image:$version,$image:latest" >> "$GITHUB_OUTPUT"
           else

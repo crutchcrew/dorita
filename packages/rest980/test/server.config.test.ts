@@ -110,6 +110,14 @@ describe('validateConfig', () => {
     expect(() => validateConfig({ ...base, trustedNetworks: '10.0.0.0/8, ::1' })).not.toThrow();
   });
 
+  it('needs the internal port to differ from the main port', () => {
+    const base = { blid: 'a', password: 'b', port: 3000 };
+    expect(() => validateConfig({ ...base, internalPort: 3000 })).toThrow(/INTERNAL_PORT/);
+    expect(() => validateConfig({ ...base, internalPort: 8099 })).not.toThrow();
+    expect(loadConfig({ INTERNAL_PORT: '8099' }, os.tmpdir()).internalPort).toBe(8099);
+    expect(loadConfig({}, os.tmpdir()).internalPort).toBeNull();
+  });
+
   it('accepts a valid config', () => {
     expect(() => validateConfig({ blid: 'a', password: 'b' })).not.toThrow();
   });

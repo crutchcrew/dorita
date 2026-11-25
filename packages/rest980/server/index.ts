@@ -26,6 +26,7 @@ export interface StartServerOptions {
 
 export interface Server {
   port: number;
+  internalPort: number | null;
   url: string;
   robot: Robot;
   stop: () => Promise<void>;
@@ -33,9 +34,11 @@ export interface Server {
 
 // Serves a fetch-style handler with node:http, for running under Node.js
 // (e.g. robots that need TLS ciphers Bun lacks).
-function serveWithNode(app: App, config: Config): Promise<RunningServer> {
+// `internal`: the plain-HTTP listener on config.internalPort.
+function serveWithNode(app: App, config: Config, internal = false): Promise<RunningServer> {
+  const useTls = !internal && Boolean(config.sslKeyFile && config.sslCertFile);
   const handle = async (req: http.IncomingMessage, res: http.ServerResponse) => {
-    const protocol = config.sslKeyFile ? 'https' : 'http';
+    const protocol = useTls ? 'https' : 'http';
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
     const headers = Object.entries(req.headers)
       .filter((entry): entry is [string, string | string[]] => entry[1] !== undefined)
@@ -47,7 +50,7 @@ function serveWithNode(app: App, config: Config): Promise<RunningServer> {
       duplex: hasBody ? 'half' : undefined,
     } as RequestInit);
 
-    const response = await app.fetch(request, { address: req.socket.remoteAddress });
+    const response = await app.fetch(request, { address: req.socket.remoteAddress, internal });
     res.writeHead(response.status, Object.fromEntries(response.headers));
     if (!response.body || req.method === 'HEAD') return void res.end();
 
@@ -72,17 +75,16 @@ function serveWithNode(app: App, config: Config): Promise<RunningServer> {
     });
   };
 
-  const server =
-    config.sslKeyFile && config.sslCertFile
-      ? https.createServer(
-          { key: fs.readFileSync(config.sslKeyFile), cert: fs.readFileSync(config.sslCertFile) },
-          handler,
-        )
-      : http.createServer(handler);
+  const server = useTls
+    ? https.createServer(
+        { key: fs.readFileSync(config.sslKeyFile!), cert: fs.readFileSync(config.sslCertFile!) },
+        handler,
+      )
+    : http.createServer(handler);
 
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(config.port, () =>
+    server.listen(internal ? config.internalPort : config.port, () =>
       resolve({
         port: (server.address() as { port: number }).port,
         stop: () =>
@@ -95,20 +97,21 @@ function serveWithNode(app: App, config: Config): Promise<RunningServer> {
   });
 }
 
-function serveWithBun(app: App, config: Config): Promise<RunningServer> {
+function serveWithBun(app: App, config: Config, internal = false): Promise<RunningServer> {
+  const port = (internal ? config.internalPort : config.port) ?? 0;
   const server = Bun.serve({
-    port: config.port,
+    port,
     fetch: (request, bunServer) =>
-      app.fetch(request, { address: bunServer.requestIP(request)?.address }),
+      app.fetch(request, { address: bunServer.requestIP(request)?.address, internal }),
     // Event streams send a keep-alive comment every 15s.
     idleTimeout: 60,
     tls:
-      config.sslKeyFile && config.sslCertFile
+      !internal && config.sslKeyFile && config.sslCertFile
         ? { key: Bun.file(config.sslKeyFile), cert: Bun.file(config.sslCertFile) }
         : undefined,
   });
   return Promise.resolve({
-    port: server.port ?? config.port,
+    port: server.port ?? port,
     stop: () => server.stop(true),
   });
 }
@@ -121,16 +124,19 @@ export async function startServer(options: StartServerOptions = {}): Promise<Ser
   const app = createApp({ config, robot, log: options.log });
   const serve = typeof Bun !== 'undefined' && !options.useNodeHttp ? serveWithBun : serveWithNode;
   const server = await serve(app, config);
+  const internal = typeof config.internalPort === 'number' ? await serve(app, config, true) : null;
 
   robot.start();
 
   return {
     port: server.port,
+    internalPort: internal ? internal.port : null,
     url: (config.sslKeyFile ? 'https' : 'http') + '://localhost:' + server.port,
     robot,
     async stop() {
       robot.stop();
       await server.stop();
+      await internal?.stop();
     },
   };
 }

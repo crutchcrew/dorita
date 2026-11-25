@@ -21,6 +21,7 @@ const baseConfig: Config = {
   sslKeyFile: null,
   sslCertFile: null,
   trustedNetworks: null,
+  internalPort: null,
   robotCiphers: null,
   robotTlsMaxVersion: null,
 };
@@ -58,8 +59,8 @@ function setup(overrides: Partial<Config> = {}) {
   const robot = new Robot(config, { dorita, timeoutMs: 200 });
   robot.start();
   const app = createApp({ config, robot, log: false });
-  const request = (path: string, init?: RequestInit, address = '203.0.113.7') =>
-    app.fetch(new Request('http://localhost' + path, init), { address });
+  const request = (path: string, init?: RequestInit, address = '203.0.113.7', internal = false) =>
+    app.fetch(new Request('http://localhost' + path, init), { address, internal });
   return { app, robot, dorita, request };
 }
 
@@ -267,6 +268,32 @@ describe('rest980 app', () => {
       expect((await request('/ping', { headers: auth('admin', 's') }, '10.0.30.50')).status).toBe(
         200,
       );
+    });
+
+    describe('and an internal listener', () => {
+      const split = { trustedNetworks, internalPort: 8099 };
+
+      it('trusts only clients of the internal listener', async () => {
+        const { request } = setup(split);
+        expect((await request('/ping', {}, '172.30.32.1', true)).status).toBe(200);
+        // e.g. relayed by Docker's userland proxy from a published port
+        expect((await request('/ping', {}, '172.30.32.1', false)).status).toBe(403);
+        expect((await request('/ping', {}, '10.0.30.50', true)).status).toBe(403);
+      });
+
+      it('requires basic auth on the main port, even from trusted addresses', async () => {
+        const { request } = setup({ ...split, basicAuthUser: 'admin', basicAuthPass: 's' });
+        expect((await request('/ping', {}, '172.30.32.1')).status).toBe(401);
+        expect(
+          (await request('/ping', { headers: auth('admin', 's') }, '172.30.32.1')).status,
+        ).toBe(200);
+      });
+
+      it('refuses the main port without basic auth or trusted networks', async () => {
+        const { request } = setup({ internalPort: 8099 });
+        expect((await request('/ping', {}, '127.0.0.1')).status).toBe(403);
+        expect((await request('/ping', {}, '127.0.0.1', true)).status).toBe(200);
+      });
     });
 
     it('trusts nobody when the list has no entries', async () => {
