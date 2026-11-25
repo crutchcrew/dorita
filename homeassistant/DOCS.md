@@ -31,7 +31,7 @@ stays "connecting", restart the robot.
 | Option                           | Default          |                                                                                                                                                  |
 | -------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `blid`, `password`               |                  | **Required.** From step 1.                                                                                                                       |
-| `robotIP`                        |                  | Empty: find the robot with a UDP broadcast at startup.                                                                                           |
+| `robotIP`                        |                  | **Required.** Discovery broadcasts can't leave the app's Docker network.                                                                         |
 | `robotPort`                      | `8883`           | MQTT/TLS port (firmware 2.x).                                                                                                                    |
 | `firmwareVersion`                | `2`              | `1` for firmware 1.6.x, `2` for 2.x and later (j, i, s series too).                                                                              |
 | `keepAlive`                      | on               | Off: connect per request, leaving the robot free for the iRobot app (no live updates).                                                           |

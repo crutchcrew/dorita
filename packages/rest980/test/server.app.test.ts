@@ -296,6 +296,18 @@ describe('rest980 app', () => {
       });
     });
 
+    it('matches within one address family, after unmapping IPv4-mapped IPv6', async () => {
+      const v6 = setup({ trustedNetworks: '::/0' }).request;
+      expect((await v6('/ping', {}, '127.0.0.1')).status).toBe(403);
+      expect((await v6('/ping', {}, '::ffff:7f00:1')).status).toBe(403);
+      expect((await v6('/ping', {}, 'fd00::1')).status).toBe(200);
+      const v4 = setup({ trustedNetworks: '127.0.0.0/8' }).request;
+      for (const address of ['::ffff:7f00:1', '::FFFF:127.0.0.1', '0:0:0:0:0:ffff:7f00:1']) {
+        expect((await v4('/ping', {}, address)).status).toBe(200);
+      }
+      expect((await v4('/ping', {}, '::7f00:1')).status).toBe(403);
+    });
+
     it('trusts nobody when the list has no entries', async () => {
       const { request } = setup({ trustedNetworks: ',' });
       expect((await request('/ping', {}, '127.0.0.1')).status).toBe(403);

@@ -116,6 +116,7 @@ describe('validateConfig', () => {
     expect(() => validateConfig({ ...base, internalPort: 8099 })).not.toThrow();
     expect(loadConfig({ INTERNAL_PORT: '8099' }, os.tmpdir()).internalPort).toBe(8099);
     expect(loadConfig({}, os.tmpdir()).internalPort).toBeNull();
+    expect(loadConfig({}, tempConfig({ internalPort: 0 })).internalPort).toBe(0);
   });
 
   it('accepts a valid config', () => {

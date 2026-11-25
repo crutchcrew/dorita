@@ -107,7 +107,8 @@ export function loadConfig(
   const config = values as unknown as Config;
   config.port = parseInt(String(values.port), 10);
   config.robotPort = parseInt(String(values.robotPort), 10);
-  config.internalPort = values.internalPort ? parseInt(String(values.internalPort), 10) : null;
+  config.internalPort =
+    values.internalPort === null ? null : parseInt(String(values.internalPort), 10);
   config.firmwareVersion = parseInt(String(values.firmwareVersion), 10) === 1 ? 1 : 2;
   // The cloud API is not implemented for firmware 2.x.
   if (config.firmwareVersion === 2) config.enableCloud = 'no';
@@ -136,27 +137,59 @@ export function validateConfig(config: Partial<Config>): void {
   }
 }
 
-// "172.30.32.0/23, 10.0.0.5" -> a matcher for client addresses. IPv4-mapped
-// IPv6 addresses (::ffff:a.b.c.d) match their IPv4 form.
+// An IPv4-mapped IPv6 address (::ffff:7f00:1, ::ffff:127.0.0.1) as plain IPv4;
+// anything else unchanged.
+export function unmapIPv4(address: string): string {
+  if (net.isIP(address) !== 6) return address;
+  let text = address.toLowerCase().replace(/%.*$/, '');
+  const dotted = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(text);
+  if (dotted) {
+    const [a, b, c, d] = dotted.slice(1).map(Number) as [number, number, number, number];
+    text =
+      text.slice(0, -dotted[0].length) +
+      ((a << 8) | b).toString(16) +
+      ':' +
+      ((c << 8) | d).toString(16);
+  }
+  const [head = '', tail] = text.split('::');
+  const before = head ? head.split(':') : [];
+  const after = tail ? tail.split(':') : [];
+  const groups =
+    tail === undefined
+      ? before
+      : [...before, ...Array(8 - before.length - after.length).fill('0'), ...after];
+  const n = groups.map((group) => parseInt(group, 16));
+  if (n.length !== 8 || n.slice(0, 5).some((group) => group !== 0) || n[5] !== 0xffff) {
+    return address;
+  }
+  const [hi = 0, lo = 0] = n.slice(6);
+  return [hi >> 8, hi & 255, lo >> 8, lo & 255].join('.');
+}
+
+// "172.30.32.0/23, 10.0.0.5" -> a matcher for client addresses. Rules and
+// clients are compared within one family only (an IPv6 rule such as ::/0 never
+// matches an IPv4 client), after IPv4-mapped IPv6 addresses become IPv4.
 export function parseNetworks(list: string): (address: string | undefined) => boolean {
-  const blocks = new net.BlockList();
+  const blocks = { ipv4: new net.BlockList(), ipv6: new net.BlockList() };
   for (const entry of list
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)) {
-    const [address = '', bits] = entry.split('/');
+    const [raw = '', bits] = entry.split('/');
+    const address = bits === undefined ? unmapIPv4(raw) : raw;
     const version = net.isIP(address);
     if (!version || (bits !== undefined && !/^\d+$/.test(bits))) {
       throw new Error('TRUSTED_NETWORKS: not an IP address or CIDR: ' + entry);
     }
     const family = version === 6 ? 'ipv6' : 'ipv4';
-    if (bits === undefined) blocks.addAddress(address, family);
-    else blocks.addSubnet(address, parseInt(bits, 10), family);
+    if (bits === undefined) blocks[family].addAddress(address, family);
+    else blocks[family].addSubnet(address, parseInt(bits, 10), family);
   }
   return (address) => {
     if (!address) return false;
-    const plain = address.startsWith('::ffff:') ? address.slice(7) : address;
+    const plain = unmapIPv4(address);
     const version = net.isIP(plain);
-    return version !== 0 && blocks.check(plain, version === 6 ? 'ipv6' : 'ipv4');
+    if (version === 4) return blocks.ipv4.check(plain, 'ipv4');
+    return version === 6 && blocks.ipv6.check(plain, 'ipv6');
   };
 }

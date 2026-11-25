@@ -7,7 +7,7 @@ configuration:
     description: The robot's local password, not your iRobot account password.
   robotIP:
     name: Robot IP
-    description: Leave empty to find the robot with a UDP broadcast at startup. A fixed IP is more reliable.
+    description: The robot's IP address (give it a fixed one in your router). Required, because the app can't discover robots from inside Home Assistant's Docker network.
   robotPort:
     name: Robot port
     description: The robot's MQTT/TLS port (firmware 2.x). Default 8883.

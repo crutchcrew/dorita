@@ -707,6 +707,9 @@ The Home Assistant app lives in [`homeassistant/`](homeassistant) and pulls the 
 its `version`, which CI keeps equal to rest980's. To release it, bump both, merge, and push a
 `v<version>` tag: the Image workflow publishes `ghcr.io/crutchcrew/dorita:<version>` (and `edge` on
 every push to main).
+The first publish creates the GHCR package as **private**; make it public once (package settings →
+Change visibility) and check `docker pull ghcr.io/crutchcrew/dorita:<version>` works signed out,
+since Home Assistant pulls anonymously.
 
 ## Credits
 

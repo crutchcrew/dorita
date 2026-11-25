@@ -39,7 +39,8 @@ options:
 schema:
   blid: str
   password: password
-  robotIP: str?
+  # Required: discovery broadcasts can't leave the app's Docker network.
+  robotIP: match(^\S+$)
   robotPort: port?
   firmwareVersion: list(1|2)
   keepAlive: bool
