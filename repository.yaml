@@ -1,0 +1,5 @@
+# Lets Home Assistant add this repo as an app repository:
+# Settings → Apps → App store → ⋮ → Repositories → https://github.com/crutchcrew/dorita
+name: Dorita
+url: https://github.com/crutchcrew/dorita
+maintainer: crutchcrew

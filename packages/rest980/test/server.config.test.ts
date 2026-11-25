@@ -56,6 +56,21 @@ describe('loadConfig', () => {
     expect(config.blid).toBe('custom');
   });
 
+  it('reads booleans and lists from JSON, as Home Assistant writes them', () => {
+    const dir = tempConfig({ keepAlive: false, enableLocal: true, trustedNetworks: ['a', 'b'] });
+    const config = loadConfig({}, dir);
+    expect(config.keepAlive).toBe('no');
+    expect(config.enableLocal).toBe('yes');
+    expect(config.trustedNetworks).toBe('a,b');
+    expect(loadConfig({}, tempConfig({ trustedNetworks: [] })).trustedNetworks).toBe(',');
+    expect(loadConfig({ TRUSTED_NETWORKS: '10.0.0.0/8' }, dir).trustedNetworks).toBe('10.0.0.0/8');
+    const tls = loadConfig(
+      {},
+      tempConfig({ robotCiphers: 'AES128-SHA256', robotTlsMaxVersion: 'TLSv1.2' }),
+    );
+    expect([tls.robotCiphers, tls.robotTlsMaxVersion]).toEqual(['AES128-SHA256', 'TLSv1.2']);
+  });
+
   it('ignores empty values', () => {
     const dir = tempConfig({ blid: '', port: null });
     const config = loadConfig({ PASSWORD: '' }, dir);
@@ -82,6 +97,37 @@ describe('validateConfig', () => {
     expect(() => validateConfig({ blid: 'a', password: 'b', basicAuthPass: 'secret' })).toThrow(
       /BASIC_AUTH_USER/,
     );
+  });
+
+  it('rejects trusted networks that are not IPs or CIDRs', () => {
+    const base = { blid: 'a', password: 'b' };
+    expect(() => validateConfig({ ...base, trustedNetworks: 'homeassistant' })).toThrow(
+      /TRUSTED_NETWORKS/,
+    );
+    expect(() => validateConfig({ ...base, trustedNetworks: '10.0.0.0/x' })).toThrow(
+      /TRUSTED_NETWORKS/,
+    );
+    expect(() => validateConfig({ ...base, trustedNetworks: '10.0.0.0/8/32' })).toThrow(
+      /TRUSTED_NETWORKS/,
+    );
+    expect(() => validateConfig({ ...base, trustedNetworks: '10.0.0.0/8, ::1' })).not.toThrow();
+  });
+
+  it('needs the internal port to differ from the main port', () => {
+    const base = { blid: 'a', password: 'b', port: 3000 };
+    expect(() => validateConfig({ ...base, internalPort: 3000 })).toThrow(/INTERNAL_PORT/);
+    expect(() => validateConfig({ ...base, internalPort: 8099 })).not.toThrow();
+    expect(loadConfig({ INTERNAL_PORT: '8099' }, os.tmpdir()).internalPort).toBe(8099);
+    expect(loadConfig({}, os.tmpdir()).internalPort).toBeNull();
+    expect(loadConfig({}, tempConfig({ internalPort: 0 })).internalPort).toBe(0);
+  });
+
+  it('rejects an invalid robot TLS version before the server starts', () => {
+    const base = { blid: 'a', password: 'b' };
+    expect(() => validateConfig({ ...base, robotTlsMaxVersion: '1.2' })).toThrow(
+      /ROBOT_TLS_MAX_VERSION/,
+    );
+    expect(() => validateConfig({ ...base, robotTlsMaxVersion: 'TLSv1.2' })).not.toThrow();
   });
 
   it('accepts a valid config', () => {

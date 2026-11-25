@@ -186,9 +186,11 @@ export class Robot extends EventEmitter {
   }
 
   private createLocalV2(onError?: (error: Error) => void): LocalV2 {
-    const { blid, password, robotPort } = this.config;
+    const { blid, password, robotPort, robotCiphers, robotTlsMaxVersion } = this.config;
     const client = this.dorita.Local(blid, password, this.ip || '', 2, {
       port: robotPort,
+      ciphers: robotCiphers || undefined,
+      maxVersion: (robotTlsMaxVersion || undefined) as LocalV2Options['maxVersion'],
       onError:
         onError ||
         ((error) => {

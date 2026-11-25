@@ -1,0 +1,35 @@
+configuration:
+  blid:
+    name: BLID
+    description: The robot's BLID (get it with get-roomba-password or get-roomba-password-cloud).
+  password:
+    name: Robot password
+    description: The robot's local password, not your iRobot account password.
+  robotIP:
+    name: Robot IP
+    description: The robot's IP address (give it a fixed one in your router). Required, because the app can't discover robots from inside Home Assistant's Docker network.
+  robotPort:
+    name: Robot port
+    description: The robot's MQTT/TLS port (firmware 2.x). Default 8883.
+  firmwareVersion:
+    name: Firmware
+    description: 1 for firmware 1.6.x; 2 for 2.x and later, including 3.x and the j/i/s series.
+  keepAlive:
+    name: Keep the connection open
+    description: Holds the robot's only local connection for live updates. Turn off to leave it free for the iRobot app (no live map).
+  trustedNetworks:
+    name: Trusted networks
+    description: IPs/CIDRs served without basic auth on the internal port (8099). 172.30.32.0/23 is Home Assistant's internal network (the sidebar and integrations). The published port never trusts anyone.
+  basicAuthUser:
+    name: Basic auth user
+    description: Required to use the published port (3000) from outside Home Assistant.
+  basicAuthPass:
+    name: Basic auth password
+  robotCiphers:
+    name: Robot TLS ciphers
+    description: Override the cipher list for the robot connection. Default AES128-SHA256.
+  robotTlsMaxVersion:
+    name: Robot TLS max version
+    description: Set TLSv1.2 if the robot resets the connection during the TLS handshake (seen on a Roomba j7+).
+network:
+  3000/tcp: REST API and web UI outside Home Assistant (needs basic auth)

@@ -28,6 +28,7 @@ dorita980 is an unofficial SDK for iRobot Roomba robot vaccuums. It talks to you
 - [Getting started](#getting-started)
 - [Getting your BLID and password](#getting-your-blid-and-password)
 - [REST API and web UI](#rest-api-and-web-ui)
+- [Home Assistant](#home-assistant)
 - [Library API](#library-api)
 - [Development](#development)
 - [Support the project](#support-the-project)
@@ -78,14 +79,15 @@ The cloud API isn't implemented for firmware 2.x and later yet. [Help wanted!](h
 
 dorita980 is written in TypeScript and developed and tested on [Bun](https://bun.sh) 1.2.21 or later, which runs the sources directly. The npm packages ship compiled JavaScript and type declarations in `dist/`, so the library and the REST server also run on Node.js 20.19 or later, with `import` or `require`. To run the server on Node.js from a clone, build it first with `bun run build`.
 
-By default dorita980 asks for the `AES128-SHA256` cipher, which some older robots need (for example 900 series robots on firmware 2.x). Bun is built on BoringSSL, which doesn't support that cipher, so on Bun it is dropped and the runtime's default ciphers are used instead. **If the TLS handshake with your robot fails under Bun, run the same code with Node.js**, for example `node packages/rest980/dist/bin/rest980.js` from a clone after `bun run build`. The REST server prints a hint in its logs and in the web UI when this looks like the cause.
+By default dorita980 asks for the `AES128-SHA256` cipher, which some older robots need (for example 900 series robots on firmware 2.x). Bun is built on BoringSSL, which doesn't support that cipher, so on Bun it is dropped and the runtime's default ciphers are used instead. **If the TLS handshake with your robot fails under Bun, run the same code with Node.js** (the [Docker image](#run-with-docker) already does), for example `node packages/rest980/dist/bin/rest980.js` from a clone after `bun run build`. The REST server prints a hint in its logs and in the web UI when this looks like the cause.
 
 Newer OpenSSL versions also disable legacy TLS renegotiation, which some robots need. dorita980 turns it back on when it's available. Two environment variables change this behaviour:
 
-| Variable           | Effect                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ROBOT_TLS_LEGACY` | Set to `0` to turn legacy renegotiation off.                                                                                                    |
-| `ROBOT_CIPHERS`    | A custom cipher list for the robot connection, e.g. `ROBOT_CIPHERS=AES128-SHA bun myapp.js`. The runtime ignores any cipher it doesn't support. |
+| Variable                | Effect                                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ROBOT_TLS_LEGACY`      | Set to `0` to turn legacy renegotiation off.                                                                                                    |
+| `ROBOT_CIPHERS`         | A custom cipher list for the robot connection, e.g. `ROBOT_CIPHERS=AES128-SHA bun myapp.js`. The runtime ignores any cipher it doesn't support. |
+| `ROBOT_TLS_MAX_VERSION` | Caps the TLS version, e.g. `TLSv1.2` for robots that reset a handshake offering TLS 1.3 (seen on a j7+).                                        |
 
 ## Getting started
 
@@ -269,30 +271,42 @@ Then open `http://<server-ip>:3000`. If your robot needs a cipher Bun doesn't ha
 
 ### Run with Docker
 
+The image builds with Bun and runs on Node.js, so robots that need the `AES128-SHA256` cipher work.
+It's published for amd64 and arm64:
+
 ```bash
-docker build -t dorita980 .
-docker run -p 3000:3000 -e BLID=myblid -e PASSWORD=mypassword -e ROBOT_IP=192.168.1.104 dorita980
+docker run -d --name dorita --restart unless-stopped -p 3000:3000 \
+  -e BLID=myblid -e PASSWORD=mypassword -e ROBOT_IP=192.168.1.104 \
+  ghcr.io/crutchcrew/dorita
 ```
+
+Or build it yourself with `docker build -t dorita .`. The container starts as root only to make a
+root-only `CONFIG_FILE` readable, then runs as the `node` user (uid 1000). To run fully unprivileged,
+for example with `--read-only --cap-drop ALL`, add `--user 1000:1000`.
 
 ### Configuration
 
 Set environment variables (Bun loads `.env` automatically), or put the same keys in `config/default.json` or the file named by `CONFIG_FILE`. Environment variables win.
 
-| Config key        | Environment variable | Description                                                                                                                                          |
-| ----------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blid`            | `BLID`               | **Required.** The robot's BLID.                                                                                                                      |
-| `password`        | `PASSWORD`           | **Required.** The robot's password.                                                                                                                  |
-| `robotIP`         | `ROBOT_IP`           | The robot's IP. If unset, the robot is found with a UDP broadcast at startup.                                                                        |
-| `port`            | `PORT`               | HTTP port. Default `3000`.                                                                                                                           |
-| `robotPort`       | `ROBOT_PORT`         | The robot's MQTT/TLS port (firmware 2.x). Default `8883`.                                                                                            |
-| `firmwareVersion` | `FIRMWARE_VERSION`   | `1` for firmware 1.6.x, `2` for firmware 2.x and later (including 3.x). Default `2`.                                                                 |
-| `enableLocal`     | `ENABLE_LOCAL`       | `no` turns off the local API. Default `yes`.                                                                                                         |
-| `enableCloud`     | `ENABLE_CLOUD`       | `no` turns off the cloud API (firmware 1.x only). Default `yes`.                                                                                     |
-| `keepAlive`       | `KEEP_ALIVE`         | `no` connects and disconnects on every request: slower, with no live updates, but it leaves the connection free for the official app. Default `yes`. |
-| `basicAuthUser`   | `BASIC_AUTH_USER`    | Turns on HTTP basic auth for the API and web UI. Set it together with `basicAuthPass`.                                                               |
-| `basicAuthPass`   | `BASIC_AUTH_PASS`    | See above.                                                                                                                                           |
-| `sslKeyFile`      | `SSL_KEY_FILE`       | Path to a key file to serve HTTPS. Set it together with `sslCertFile`.                                                                               |
-| `sslCertFile`     | `SSL_CERT_FILE`      | Path to a certificate file to serve HTTPS.                                                                                                           |
+| Config key           | Environment variable    | Description                                                                                                                                                                             |
+| -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blid`               | `BLID`                  | **Required.** The robot's BLID.                                                                                                                                                         |
+| `password`           | `PASSWORD`              | **Required.** The robot's password.                                                                                                                                                     |
+| `robotIP`            | `ROBOT_IP`              | The robot's IP. If unset, the robot is found with a UDP broadcast at startup.                                                                                                           |
+| `port`               | `PORT`                  | HTTP port. Default `3000`.                                                                                                                                                              |
+| `robotPort`          | `ROBOT_PORT`            | The robot's MQTT/TLS port (firmware 2.x). Default `8883`.                                                                                                                               |
+| `firmwareVersion`    | `FIRMWARE_VERSION`      | `1` for firmware 1.6.x, `2` for firmware 2.x and later (including 3.x). Default `2`.                                                                                                    |
+| `enableLocal`        | `ENABLE_LOCAL`          | `no` turns off the local API. Default `yes`.                                                                                                                                            |
+| `enableCloud`        | `ENABLE_CLOUD`          | `no` turns off the cloud API (firmware 1.x only). Default `yes`.                                                                                                                        |
+| `keepAlive`          | `KEEP_ALIVE`            | `no` connects and disconnects on every request: slower, with no live updates, but it leaves the connection free for the official app. Default `yes`.                                    |
+| `basicAuthUser`      | `BASIC_AUTH_USER`       | Turns on HTTP basic auth for the API and web UI. Set it together with `basicAuthPass`.                                                                                                  |
+| `basicAuthPass`      | `BASIC_AUTH_PASS`       | See above.                                                                                                                                                                              |
+| `sslKeyFile`         | `SSL_KEY_FILE`          | Path to a key file to serve HTTPS. Set it together with `sslCertFile`.                                                                                                                  |
+| `sslCertFile`        | `SSL_CERT_FILE`         | Path to a certificate file to serve HTTPS.                                                                                                                                              |
+| `trustedNetworks`    | `TRUSTED_NETWORKS`      | Comma-separated IPs/CIDRs served without basic auth. When set, every other client needs basic auth, or gets `403` if none is configured.                                                |
+| `internalPort`       | `INTERNAL_PORT`         | A second, plain-HTTP port for a proxy in front, such as Home Assistant ingress. When set, `trustedNetworks` apply only on it, and `port` always requires basic auth (`403` without it). |
+| `robotCiphers`       | `ROBOT_CIPHERS`         | See [Runtime and TLS](#runtime-and-tls).                                                                                                                                                |
+| `robotTlsMaxVersion` | `ROBOT_TLS_MAX_VERSION` | See [Runtime and TLS](#runtime-and-tls).                                                                                                                                                |
 
 The [TLS](#runtime-and-tls) and [cloud auth](#getting-your-blid-and-password) environment variables are passed through to the library.
 
@@ -391,6 +405,17 @@ See the [Library API](#library-api) for the body and response of each one.
 
 - `/api/cloud/info/status`, `/api/cloud/info/history`, `/api/cloud/info/missionHistory`
 - `/api/cloud/action/<action>`, where `<action>` is one of `clean`, `quick`, `spot`, `dock`, `start`, `stop`, `pause`, `resume`, `wake`, `reset`, `find`, `wipe`, `sleep`, `off` or `fbeep`
+
+## Home Assistant
+
+The same server runs as a Home Assistant app (formerly add-on), with the web UI in the sidebar behind
+Home Assistant's login. In Home Assistant, go to **Settings → Apps → App store → ⋮ → Repositories**,
+add `https://github.com/crutchcrew/dorita`, then install **Dorita**. Setup, options and examples for
+Home Assistant sensors and commands are in [homeassistant/DOCS.md](homeassistant/DOCS.md).
+
+The app runs the published image with its options as the config file. Ingress and Home Assistant
+use an internal port (`INTERNAL_PORT=8099`) that trusts only Home Assistant's network
+(`172.30.32.0/23`); port 3000 is closed unless you map it, and then always requires basic auth.
 
 ## Library API
 
@@ -677,6 +702,14 @@ To try the web UI without a real robot, run the mock robot in one terminal and t
 bun run mock-robot
 BLID=mockblid PASSWORD=mockpass ROBOT_IP=127.0.0.1 bun start
 ```
+
+The Home Assistant app lives in [`homeassistant/`](homeassistant) and pulls the image tag named by
+its `version`, which CI keeps equal to rest980's. To release it, bump both, merge, and push a
+`v<version>` tag: the Image workflow publishes `ghcr.io/crutchcrew/dorita:<version>` (and `edge` on
+every push to main).
+The first publish creates the GHCR package as **private**; make it public once (package settings →
+Change visibility) and check `docker pull ghcr.io/crutchcrew/dorita:<version>` works signed out,
+since Home Assistant pulls anonymously.
 
 ## Credits
 
