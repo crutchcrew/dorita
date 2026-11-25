@@ -139,6 +139,21 @@ for (const useNodeHttp of [false, true]) {
         }
       });
 
+      it('frees its ports when the robot client cannot start', async () => {
+        const mainPort = await freePort();
+        const saved = process.env.ROBOT_TLS_MAX_VERSION;
+        process.env.ROBOT_TLS_MAX_VERSION = 'not-a-version';
+        try {
+          await expect(
+            startServer({ config: configFor(1, { port: mainPort }), log: false, useNodeHttp }),
+          ).rejects.toThrow(/ROBOT_TLS_MAX_VERSION/);
+          (await listenOn(mainPort)).close();
+        } finally {
+          if (saved === undefined) delete process.env.ROBOT_TLS_MAX_VERSION;
+          else process.env.ROBOT_TLS_MAX_VERSION = saved;
+        }
+      });
+
       it('trusts only the internal listener when there is one', async () => {
         const split = await startServer({
           config: configFor(1, {

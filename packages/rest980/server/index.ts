@@ -134,7 +134,14 @@ export async function startServer(options: StartServerOptions = {}): Promise<Ser
     }
   }
 
-  robot.start();
+  try {
+    robot.start();
+  } catch (error) {
+    // e.g. dorita980 rejecting ROBOT_TLS_MAX_VERSION read from the environment.
+    await internal?.stop();
+    await server.stop();
+    throw error;
+  }
 
   return {
     port: server.port,
