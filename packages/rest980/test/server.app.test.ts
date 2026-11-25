@@ -306,6 +306,10 @@ describe('rest980 app', () => {
         expect((await v4('/ping', {}, address)).status).toBe(200);
       }
       expect((await v4('/ping', {}, '::7f00:1')).status).toBe(403);
+      const mapped = setup({ trustedNetworks: '::ffff:127.0.0.0/104' }).request;
+      expect((await mapped('/ping', {}, '127.0.0.1')).status).toBe(200);
+      expect((await mapped('/ping', {}, '::ffff:127.1.2.3')).status).toBe(200);
+      expect((await mapped('/ping', {}, '128.0.0.1')).status).toBe(403);
     });
 
     it('trusts nobody when the list has no entries', async () => {

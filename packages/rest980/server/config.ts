@@ -176,14 +176,20 @@ export function parseNetworks(list: string): (address: string | undefined) => bo
     .map((item) => item.trim())
     .filter(Boolean)) {
     const [raw = '', bits] = entry.split('/');
-    const address = bits === undefined ? unmapIPv4(raw) : raw;
-    const version = net.isIP(address);
-    if (!version || (bits !== undefined && !/^\d+$/.test(bits))) {
+    if (!net.isIP(raw) || (bits !== undefined && !/^\d+$/.test(bits))) {
       throw new Error('TRUSTED_NETWORKS: not an IP address or CIDR: ' + entry);
     }
-    const family = version === 6 ? 'ipv6' : 'ipv4';
-    if (bits === undefined) blocks[family].addAddress(address, family);
-    else blocks[family].addSubnet(address, parseInt(bits, 10), family);
+    let address = raw;
+    let prefix = bits === undefined ? undefined : parseInt(bits, 10);
+    // ::ffff:a.b.c.d[/96-128] is IPv4 a.b.c.d[/0-32], like the clients it matches.
+    const unmapped = unmapIPv4(raw);
+    if (unmapped !== raw && (prefix === undefined || prefix >= 96)) {
+      address = unmapped;
+      if (prefix !== undefined) prefix -= 96;
+    }
+    const family = net.isIP(address) === 6 ? 'ipv6' : 'ipv4';
+    if (prefix === undefined) blocks[family].addAddress(address, family);
+    else blocks[family].addSubnet(address, prefix, family);
   }
   return (address) => {
     if (!address) return false;
